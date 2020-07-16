@@ -21,7 +21,7 @@ let g:paint_indexes = [0,0,0,0,0,0,0,0,0,0]
 "The delimiter will have the form 'delimiter'[0-9]'delimiter'. Default will be #0# for paint0.
 let g:delimiter = "#"
 
-function! codepainter#ValidateColorIndex(input) range
+function! codepainter#ValidateColorIndex(input)
   if type(a:input) == type(0)
     if (a:input < 0 || a:input > 9)
         echom "Invalid index, must be from 0 to 9"
@@ -63,7 +63,7 @@ endfunc
 
 "Thanks @Xavier T. for subtitution on variable https://stackoverflow.com/questions/4864073/using-substitute-on-a-variable"
 
-func! codepainter#paintText(color)
+func! codepainter#paintText(color) range
   let color_index = codepainter#ValidateColorIndex(a:color)
   if color_index != 0 && empty(color_index)
     return
@@ -85,22 +85,27 @@ func! codepainter#paintText(color)
   endif
   "paste x register
   let @x = l:selection
-  normal! "xP
+  silent! normal! "xP
   "restore x reg
   call setreg("x", save_x, save_x_type)
 endfunc
 
-"command! -nargs=0 Painter call s:visualToTable()
+command! -nargs=0 PainterEraseAll call codepainter#EraseAll()
 
 "TODO quitar el número hardcodeado
 vnoremap <F6> :<c-u>call codepainter#paintText(0)<cr>
 
-func! s:eraseAll()
+func! codepainter#EraseAll()
   "clean all delimiters
-  let regex = g:delimeter . "[0-9]" . g:delimeter
-  normal %s/regex//g
+  let l:regex = g:delimiter . "\[0-9\]" . g:delimiter
+  execute '%s/' . l:regex . "//g"
   "erase all match rules listed
-  for index in g:paint_indexes
-    call matchdelete(index)
-  endfor
+  let index = 0
+  while index < 10
+    if g:paint_indexes[index] != 0
+      call matchdelete(g:paint_indexes[index])
+      let g:paint_indexes[index] = 0
+    endif
+  let index = index + 1
+  endwhile
 endfunc
