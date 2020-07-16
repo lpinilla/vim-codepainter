@@ -34,6 +34,30 @@ function! codepainter#ValidateColorIndex(input) range
   endif
 endfunction
 
+"remove marker in every line of selection
+func! s:UnmarkSelection(color_index, selection, deli)
+    let l:ret = substitute(a:selection, a:deli, "" , "g")
+    "check if there is another marker
+    if search(a:deli, "W") == 0
+      "no more markers for this index, erase match rule
+      call matchdelete(g:paint_indexes[a:color_index])
+      let g:paint_indexes[a:color_index] = 0
+    endif
+    return l:ret
+endfunc
+
+func! s:MarkSelection(color_index, selection, deli)
+"add marker
+    let l:ret = a:deli . a:selection
+    let l:ret = substitute(l:ret, '\n', '\n' . a:deli, "g")
+    "add match rule
+    if empty(g:paint_indexes[a:color_index])
+      let paint_name = "paint" . a:color_index
+      let regex = a:deli . ".*"
+      let g:paint_indexes[a:color_index] = matchadd(paint_name, regex)
+    endif
+    return l:ret
+endfunc
 
 "Thanks @zah https://stackoverflow.com/questions/12805922/vim-vmap-send-selected-text-as-parameter-to-function for copying selected text into register
 
@@ -53,32 +77,15 @@ func! codepainter#paintText(color)
   "build delimiter
   let l:deli = g:delimiter . color_index . g:delimiter
   "check if its already painted
-  if l:selection[0:3] == l:deli
-    "remove marker in every line of selection
-    let l:selection = substitute(l:selection, l:deli, "" , "")
-    "check if there is another marker
-    if normal /l:deli == ""
-      "no more markers for this index, erase match rule
-      call matchdelete(color_index)
-      let g:paint_indexes[color_index] = 0
-    endif
+  if l:selection[0:len(l:deli)-1] == l:deli
+    let l:selection = s:UnmarkSelection(color_index, l:selection, l:deli)
   else
     "paint
-    "add marker
-    let l:selection = l:deli . l:selection
-    echom "BEFORE MARKING $" . l:selection . "$"
-    let l:selection = substitute(l:selection, '\n', '\n' . l:deli, "")
-    echom "AFTER MARKING $" . l:selection . "$"
-    "add match rule
-    if empty(g:paint_indexes[color_index])
-      let paint_name = "paint" . color_index
-      let regex =  l:deli . ".*"
-      let g:paint_indexes[color_index] = matchadd(paint_name, regex)
-    endif
+    let l:selection = s:MarkSelection(color_index, l:selection, l:deli)
+  endif
   "paste x register
   let @x = l:selection
   normal! "xP
-  endif
   "restore x reg
   call setreg("x", save_x, save_x_type)
 endfunc
@@ -91,7 +98,7 @@ vnoremap <F6> :<c-u>call codepainter#paintText(0)<cr>
 func! s:eraseAll()
   "clean all delimiters
   let regex = g:delimeter . "[0-9]" . g:delimeter
-  normal %s/a:regex//g
+  normal %s/regex//g
   "erase all match rules listed
   for index in g:paint_indexes
     call matchdelete(index)
