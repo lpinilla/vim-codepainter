@@ -21,7 +21,7 @@ let g:paint_indexes = [0,0,0,0,0,0,0,0,0,0]
 "The delimiter will have the form 'delimiter'[0-9]'delimiter'. Default will be #0# for paint0.
 let g:delimiter = "#"
 
-function! codepainter#ValidateColorIndex(input)
+function! codepainter#ValidateColorIndex(input) range
   if type(a:input) == type(0)
     if (a:input < 0 || a:input > 9)
         echom "Invalid index, must be from 0 to 9"
@@ -44,11 +44,11 @@ func! codepainter#paintText(color)
   if color_index != 0 && empty(color_index)
     return
   endif
-  let save_x = getreg("x")
+  let save_x = @x
   let save_x_type = getregtype("x")
   "copy selection to register x
-  "normal gv"xy
-  normal "xy
+  let @x = ""
+  silent! normal! gv"xx
   let l:selection = getreg("x")
   "build delimiter
   let l:deli = g:delimiter . color_index . g:delimiter
@@ -60,12 +60,15 @@ func! codepainter#paintText(color)
     if normal /l:deli == ""
       "no more markers for this index, erase match rule
       call matchdelete(color_index)
+      let g:paint_indexes[color_index] = 0
     endif
   else
     "paint
     "add marker
     let l:selection = l:deli . l:selection
-    let l:selection = substitute(l:selection, '\\n', '\\n' . l:deli, "")
+    echom "BEFORE MARKING $" . l:selection . "$"
+    let l:selection = substitute(l:selection, '\n', '\n' . l:deli, "")
+    echom "AFTER MARKING $" . l:selection . "$"
     "add match rule
     if empty(g:paint_indexes[color_index])
       let paint_name = "paint" . color_index
@@ -73,8 +76,8 @@ func! codepainter#paintText(color)
       let g:paint_indexes[color_index] = matchadd(paint_name, regex)
     endif
   "paste x register
-  echo "final" . l:selection
-  put =l:selection
+  let @x = l:selection
+  normal! "xP
   endif
   "restore x reg
   call setreg("x", save_x, save_x_type)
@@ -83,7 +86,7 @@ endfunc
 "command! -nargs=0 Painter call s:visualToTable()
 
 "TODO quitar el número hardcodeado
-vnoremap <F6> :call codepainter#paintText(0)<cr>
+vnoremap <F6> :<c-u>call codepainter#paintText(0)<cr>
 
 func! s:eraseAll()
   "clean all delimiters
