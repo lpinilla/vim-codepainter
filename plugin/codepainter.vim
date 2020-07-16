@@ -2,7 +2,7 @@
 if exists("g:loaded_painter")
   finish
 endif
-let g:loaded_painer = 1
+let g:loaded_painter = 1
 
 " defining the colors
 hi paint0 gui=reverse guifg=#A3BE8C guibg=#2E3440
@@ -16,63 +16,81 @@ hi paint7 gui=reverse guifg=#2D401C guibg=#ffffff
 hi paint8 gui=reverse guifg=#6868BD guibg=#2E3440
 hi paint9 gui=reverse guifg=#C2B330 guibg=#2E3440
 
-
-let g:paint_indexes = []
+let g:paint_indexes = [0,0,0,0,0,0,0,0,0,0]
 
 "The delimiter will have the form 'delimiter'[0-9]'delimiter'. Default will be #0# for paint0.
 let g:delimiter = "#"
 
-
-func! Test2(text)
-    echom a:text
+function! codepainter#ValidateColorIndex(input)
+  if type(a:input) == type(0)
+    if (a:input < 0 || a:input > 9)
+        echom "Invalid index, must be from 0 to 9"
+        return ''
+    endif
+    return a:input
+  else
+    echom "input must be digit"
+    return ''
+  endif
 endfunction
 
-"Thanks @zah https://stackoverflow.com/questions/12805922/vim-vmap-send-selected-text-as-parameter-to-function ! (adapted to restore x register)
-func! GetSelectedText(color_index)
-  if color_index < 0
-      echom "Invalid color"
-      return
-  elseif color_index > 9
-      echom "only 10 colors available"
-      return
-  "save x reg
+
+"Thanks @zah https://stackoverflow.com/questions/12805922/vim-vmap-send-selected-text-as-parameter-to-function for copying selected text into register
+
+"Thanks @Xavier T. for subtitution on variable https://stackoverflow.com/questions/4864073/using-substitute-on-a-variable"
+
+func! codepainter#paintText(color)
+  let color_index = codepainter#ValidateColorIndex(a:color)
+  if color_index != 0 && empty(color_index)
+    return
+  endif
   let save_x = getreg("x")
   let save_x_type = getregtype("x")
-  normal gv"xy
-  let selection = getreg("x")
+  "copy selection to register x
+  "normal gv"xy
+  normal "xy
+  let l:selection = getreg("x")
   "build delimiter
-  let deli = g:delimiter . a:color_index . g:delimiter
+  let l:deli = g:delimiter . color_index . g:delimiter
   "check if its already painted
-  if selection[0:3] == deli
+  if l:selection[0:3] == l:deli
     "remove marker in every line of selection
-    "TODO
+    let l:selection = substitute(l:selection, l:deli, "" , "")
     "check if there is another marker
-    if normal /deli == ""
-      "erase match rule
-      call matchdelete(a:color_index)
+    if normal /l:deli == ""
+      "no more markers for this index, erase match rule
+      call matchdelete(color_index)
+    endif
   else
     "paint
+    "add marker
+    let l:selection = l:deli . l:selection
+    let l:selection = substitute(l:selection, '\\n', '\\n' . l:deli, "")
     "add match rule
-    if paint_indexes[color_index] == 0
-
-
+    if empty(g:paint_indexes[color_index])
+      let paint_name = "paint" . color_index
+      let regex =  l:deli . ".*"
+      let g:paint_indexes[color_index] = matchadd(paint_name, regex)
+    endif
+  "paste x register
+  echo "final" . l:selection
+  put =l:selection
+  endif
   "restore x reg
   call setreg("x", save_x, save_x_type)
-  normal gv
-  return
 endfunc
 
 "command! -nargs=0 Painter call s:visualToTable()
 
-"vnoremap <F6> :call Test2(GetSelectedText())<cr>
-"no hardcodear el número
-vnoremap <F6> :call GetSelectedText(0)<cr>
+"TODO quitar el número hardcodeado
+vnoremap <F6> :call codepainter#paintText(0)<cr>
 
-func! s:eraseAll():
+func! s:eraseAll()
   "clean all delimiters
   let regex = g:delimeter . "[0-9]" . g:delimeter
   normal %s/a:regex//g
-  "erase match rules
-  for i in paint_indexes
-    call matchdelete(i)
+  "erase all match rules listed
+  for index in g:paint_indexes
+    call matchdelete(index)
+  endfor
 endfunc
