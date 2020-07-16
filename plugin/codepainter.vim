@@ -18,10 +18,11 @@ hi paint9 gui=reverse guifg=#C2B330 guibg=#2E3440
 
 let g:paint_indexes = [0,0,0,0,0,0,0,0,0,0]
 
-"The delimiter will have the form 'delimiter'[0-9]'delimiter'. Default will be #0# for paint0.
-let g:delimiter = "#"
+"You can choose your own delimiter, it must have a 'd' which represents the
+"color index, default: #d#
+let g:delimiter = "#d#"
 
-function! codepainter#ValidateColorIndex(input)
+function! s:ValidateColorIndex(input)
   if type(a:input) == type(0)
     if (a:input < 0 || a:input > 9)
         echom "Invalid index, must be from 0 to 9"
@@ -33,6 +34,25 @@ function! codepainter#ValidateColorIndex(input)
     return ''
   endif
 endfunction
+
+func! s:ValidateDelimiter(input)
+    "check if its a string
+    echom type(a:input)
+    if type(a:input) == 1
+        if a:input == ""
+            echom "input can't be empty"
+            return ""
+        endif
+        if matchstr(a:input, "d") == ""
+            echom "You need to supply a d where the digit will be"
+            return ""
+        endif
+    else
+        echom "input must be string"
+        return ""
+    endif
+    return a:input
+endfunc
 
 "remove marker in every line of selection
 func! s:UnmarkSelection(color_index, selection, deli)
@@ -64,23 +84,22 @@ endfunc
 "Thanks @Xavier T. for subtitution on variable https://stackoverflow.com/questions/4864073/using-substitute-on-a-variable"
 
 func! codepainter#paintText(color) range
-  let color_index = codepainter#ValidateColorIndex(a:color)
+  let color_index = s:ValidateColorIndex(a:color)
   if color_index != 0 && empty(color_index)
     return
   endif
-  let save_x = @x
+  let save_x = getreg("x")
   let save_x_type = getregtype("x")
   "copy selection to register x
   let @x = ""
   silent! normal! gv"xx
   let l:selection = getreg("x")
   "build delimiter
-  let l:deli = g:delimiter . color_index . g:delimiter
+  let l:deli = substitute(g:delimiter, "d", color_index, "")
   "check if its already painted
   if l:selection[0:len(l:deli)-1] == l:deli
     let l:selection = s:UnmarkSelection(color_index, l:selection, l:deli)
   else
-    "paint
     let l:selection = s:MarkSelection(color_index, l:selection, l:deli)
   endif
   "paste x register
@@ -90,15 +109,19 @@ func! codepainter#paintText(color) range
   call setreg("x", save_x, save_x_type)
 endfunc
 
-command! -nargs=0 PainterEraseAll call codepainter#EraseAll()
-
 "TODO quitar el número hardcodeado
-vnoremap <F6> :<c-u>call codepainter#paintText(0)<cr>
+vnoremap <c-0x31> :<c-u>call codepainter#paintText(0)<cr>
+
+
+"Commands---------------------------------
+
+command! -nargs=0 PainterEraseAll call codepainter#EraseAll()
+command! -nargs=1 PainterChangeDelimiter call codepainter#ChangeDelimiter(<f-args>)
 
 func! codepainter#EraseAll()
   "clean all delimiters
-  let l:regex = g:delimiter . "\[0-9\]" . g:delimiter
-  execute '%s/' . l:regex . "//g"
+  let l:delimiter = substitute(g:delimiter, "d", "[0-9]", "")
+  silent! execute '%s/' . l:delimiter . "//g"
   "erase all match rules listed
   let index = 0
   while index < 10
@@ -108,4 +131,16 @@ func! codepainter#EraseAll()
     endif
   let index = index + 1
   endwhile
+endfunc
+
+func! codepainter#ChangeDelimiter(nDelimiter)
+    if s:ValidateDelimiter(a:nDelimiter) == ""
+        return
+    endif
+    "change every limiter being used
+    let l:deli = substitute(g:delimit, "d", "[0-9]", "")
+    let l:nDeli = substitute(a:nDelimiter, "d", "[0-9]", "")
+    silent! execute '%s/' . g:deli . "/" . l:nDeli . "/g"
+    "update global variable
+    let g:delimiter = a:nDelimiter
 endfunc
