@@ -17,18 +17,20 @@ hi paint8 gui=reverse guifg=#6868BD guibg=#2E3440
 hi paint9 gui=reverse guifg=#C2B330 guibg=#2E3440
 
 let g:paint_indexes = [0,0,0,0,0,0,0,0,0,0]
+let g:paint_n = 0
 
 "You can choose your own delimiter, it must have a 'd' which represents the
 "color index, default: #d#
 let g:delimiter = "#d#"
 
 function! s:ValidateColorIndex(input)
-  if type(a:input) == type(0)
-    if (a:input < 0 || a:input > 9)
+  let l:n = str2nr(a:input)
+  if type(l:n) == type(0)
+    if (l:n < 0 || l:n > 9)
         echom "Invalid index, must be from 0 to 9"
         return ''
     endif
-    return a:input
+    return l:n
   else
     echom "input must be digit"
     return ''
@@ -83,11 +85,7 @@ endfunc
 
 "Thanks @Xavier T. for subtitution on variable https://stackoverflow.com/questions/4864073/using-substitute-on-a-variable"
 
-func! codepainter#paintText(color) range
-  let color_index = s:ValidateColorIndex(a:color)
-  if color_index != 0 && empty(color_index)
-    return
-  endif
+func! codepainter#paintText() range
   let save_x = getreg("x")
   let save_x_type = getregtype("x")
   "copy selection to register x
@@ -95,12 +93,12 @@ func! codepainter#paintText(color) range
   silent! normal! gv"xx
   let l:selection = getreg("x")
   "build delimiter
-  let l:deli = substitute(g:delimiter, "d", color_index, "")
+  let l:deli = substitute(g:delimiter, "d", g:paint_n, "")
   "check if its already painted
-  if l:selection[0:len(l:deli)-1] == l:deli
-    let l:selection = s:UnmarkSelection(color_index, l:selection, l:deli)
+  if l:selection[0:len(g:delimiter)-1] =~# substitute(g:delimiter, "d", "[0-9]", "")
+    let l:selection = s:UnmarkSelection(g:paint_n, l:selection, l:deli)
   else
-    let l:selection = s:MarkSelection(color_index, l:selection, l:deli)
+    let l:selection = s:MarkSelection(g:paint_n, l:selection, l:deli)
   endif
   "paste x register
   let @x = l:selection
@@ -109,12 +107,11 @@ func! codepainter#paintText(color) range
   call setreg("x", save_x, save_x_type)
 endfunc
 
-"TODO quitar el número hardcodeado
-vnoremap <c-0x31> :<c-u>call codepainter#paintText(0)<cr>
-
+vnoremap <F2> :<c-u>call codepainter#paintText()<cr>
 
 "Commands---------------------------------
 
+command! -nargs=1 PainterPickColor call codepainter#ChangeColor(<f-args>)
 command! -nargs=0 PainterEraseAll call codepainter#EraseAll()
 command! -nargs=1 PainterChangeDelimiter call codepainter#ChangeDelimiter(<f-args>)
 
@@ -144,3 +141,12 @@ func! codepainter#ChangeDelimiter(nDelimiter)
     "update global variable
     let g:delimiter = a:nDelimiter
 endfunc
+
+func! codepainter#ChangeColor(nPaint)
+  let l:paint = s:ValidateColorIndex(a:nPaint)
+  if l:paint != 0 && empty(l:paint)
+    return
+  endif
+  let g:paint_n = l:paint
+endfunc
+
