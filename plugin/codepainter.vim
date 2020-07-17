@@ -60,11 +60,15 @@ endfunc
 func! s:UnmarkSelection(color_index, selection, deli)
     let l:ret = substitute(a:selection, a:deli, "" , "g")
     "check if there is another marker
+    "save cursor position
+    let save_pos = getpos('.')
+    call setpos('.', [0,0,0,0])
     if search(a:deli, "W") == 0
       "no more markers for this index, erase match rule
       call matchdelete(g:paint_indexes[a:color_index])
       let g:paint_indexes[a:color_index] = 0
     endif
+    call setpos('.', save_pos)
     return l:ret
 endfunc
 
@@ -146,7 +150,6 @@ func! codepainter#ChangeDelimiter(nDelimiter)
         call matchdelete(g:paint_indexes[index])
         let paint_name = "paint" . index
         let regex = substitute(l:nDeli, '\\1', index, "") . ".*"
-        echom "REGEX $" . regex . "$"
         let g:paint_indexes[index] = matchadd(paint_name, regex)
       endif
       let index = index + 1
