@@ -131,13 +131,26 @@ func! codepainter#EraseAll()
 endfunc
 
 func! codepainter#ChangeDelimiter(nDelimiter)
-    if s:ValidateDelimiter(a:nDelimiter) == ""
+    let l:nDeli = s:ValidateDelimiter(a:nDelimiter)
+    if l:nDeli == ""
         return
     endif
     "change every limiter being used
-    let l:deli = substitute(g:delimit, "d", "[0-9]", "")
-    let l:nDeli = substitute(a:nDelimiter, "d", "[0-9]", "")
-    silent! execute '%s/' . g:deli . "/" . l:nDeli . "/g"
+    let l:deli = substitute(g:delimiter, "d", '\\([0-9]\\)', "")
+    let l:nDeli = substitute(l:nDeli, "d", '\\1', "")
+    silent! execute '%s/' . l:deli . "/" . l:nDeli . "/g"
+    "recreate every matching rule
+    let index = 0
+    while index < 10
+      if g:paint_indexes[index] != 0
+        call matchdelete(g:paint_indexes[index])
+        let paint_name = "paint" . index
+        let regex = substitute(l:nDeli, '\\1', index, "") . ".*"
+        echom "REGEX $" . regex . "$"
+        let g:paint_indexes[index] = matchadd(paint_name, regex)
+      endif
+      let index = index + 1
+    endwhile
     "update global variable
     let g:delimiter = a:nDelimiter
 endfunc
