@@ -62,12 +62,14 @@ func! s:UnmarkSelection(color_index, selection, deli)
     "check if there is another marker
     "save cursor position
     let save_pos = getpos('.')
+    "go to beggining of buffer
     call setpos('.', [0,0,0,0])
     if search(a:deli, "W") == 0
       "no more markers for this index, erase match rule
       call matchdelete(g:paint_indexes[a:color_index])
       let g:paint_indexes[a:color_index] = 0
     endif
+    "restore position
     call setpos('.', save_pos)
     return l:ret
 endfunc
