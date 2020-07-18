@@ -34,4 +34,4 @@ If you first paint something with a color and then apply another color to the sa
 
 ### Contributions
 
-In case you find a bug and want to fix it or add new features, feel free to fork the repo and create a pool request!
+In case you find a bug and want to fix it or add new features, feel free to fork the repo and create a pull request!
