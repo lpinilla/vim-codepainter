@@ -75,9 +75,14 @@ func! s:UnmarkSelection(color_index, selection, deli)
 endfunc
 
 func! s:MarkSelection(color_index, selection, deli)
-"add marker
+    "add marker
     let l:ret = a:deli . a:selection
-    let l:ret = substitute(l:ret, '\n', '\n' . a:deli, "g")
+    "hack to make it more comfortable
+    if l:ret[-1:-1] == "\x0a"
+        let l:ret = substitute(l:ret[:-2], '\n', '\n' . a:deli, "g") . "\n"
+    else
+        let l:ret = substitute(l:ret, '\n', '\n' . a:deli, "g")
+    endif
     "add match rule
     if empty(g:paint_indexes[a:color_index])
       let paint_name = "paint" . a:color_index
