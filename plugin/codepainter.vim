@@ -19,155 +19,70 @@ hi paint9 gui=reverse guifg=#C2B330 guibg=#2E3440
 let g:paint_indexes = [0,0,0,0,0,0,0,0,0,0]
 let g:paint_n = 0
 
-"You can choose your own delimiter, it must have a 'd' which represents the
-"color index, default: #d#
-let g:delimiter = "#d#"
-
 function! s:ValidateColorIndex(input)
   let l:n = str2nr(a:input)
-  if type(l:n) == type(0)
+  if type(l:n) != type(0)
+    echom "input must be digit"
+    return ''
+  else
     if (l:n < 0 || l:n > 9)
         echom "Invalid index, must be from 0 to 9"
         return ''
     endif
-    return l:n
-  else
-    echom "input must be digit"
-    return ''
   endif
+  return l:n
 endfunction
 
-func! s:ValidateDelimiter(input)
-    "check if its a string
-    echom type(a:input)
-    if type(a:input) == 1
-        if a:input == ""
-            echom "input can't be empty"
-            return ""
-        endif
-        if matchstr(a:input, "d") == ""
-            echom "You need to supply a d where the digit will be"
-            return ""
-        endif
-    else
-        echom "input must be string"
-        return ""
-    endif
-    return a:input
-endfunc
-
-"remove marker in every line of selection
-func! s:UnmarkSelection(color_index, selection, deli)
-    let l:ret = substitute(a:selection, a:deli, "" , "g")
-    "check if there is another marker
-    "save cursor position
-    let save_pos = getpos('.')
-    "go to beginning of buffer
-    call setpos('.', [0,0,0,0])
-    if search(a:deli, "W") == 0
-      "no more markers for this index, erase match rule
-      call matchdelete(g:paint_indexes[a:color_index])
-      let g:paint_indexes[a:color_index] = 0
-    endif
-    "restore position
-    call setpos('.', save_pos)
-    return l:ret
-endfunc
-
-func! s:MarkSelection(color_index, selection, deli)
-    "add marker
-    let l:ret = a:deli . a:selection
-    "hack to make it more comfortable
-    if l:ret[-1:-1] == "\x0a"
-        let l:ret = substitute(l:ret[:-2], '\n', '\n' . a:deli, "g") . "\n"
-    else
-        let l:ret = substitute(l:ret, '\n', '\n' . a:deli, "g")
-    endif
-    "add match rule
-    if empty(g:paint_indexes[a:color_index])
-      let paint_name = "paint" . a:color_index
-      let regex = a:deli . ".*"
-      let g:paint_indexes[a:color_index] = matchadd(paint_name, regex)
-    endif
-    return l:ret
-endfunc
-
-"Thanks @zah https://stackoverflow.com/questions/12805922/vim-vmap-send-selected-text-as-parameter-to-function for copying selected text into register
-
-"Thanks @Xavier T. for subtitution on variable https://stackoverflow.com/questions/4864073/using-substitute-on-a-variable"
-
-"func! codepainter#paintText() range
-"  let save_x = getreg("x")
-"  let save_x_type = getregtype("x")
-"  "copy selection to register x
-"  let @x = ""
-"  silent! normal! gv"xx
-"  let l:selection = getreg("x")
-"  "build delimiter
-"  let l:deli = substitute(g:delimiter, "d", g:paint_n, "")
-"  "check if its already painted
-"  if l:selection[0:len(g:delimiter)-1] =~# substitute(g:delimiter, "d", "[0-9]", "")
-"    let l:selection = s:UnmarkSelection(g:paint_n, l:selection, l:deli)
-"  else
-"    let l:selection = s:MarkSelection(g:paint_n, l:selection, l:deli)
-"  endif
-"  "paste x register
-"  let @x = l:selection
-"  silent! normal! "xP
-"  "restore x reg
-"  call setreg("x", save_x, save_x_type)
-"endfunc
 
 func! s:GrabSelectionValues() range
     let start_pos = getpos("'<")
     let end_pos = getpos("'>")
-    let delta = [0,0]
-    let delta[0] = end_pos[1] - start_pos[1]
-    let delta[1] = end_pos[2] - start_pos[2]
-    let save_x = getreg("x")
-    let save_x_type = getregtype("x")
-    "copy selection to register x
-    let @x = ""
-    silent! normal! gv"xy
-    let l:selection = getreg("x")
-    return [start_pos, delta, l:selection]
+    let delta = [end_pos[1] - start_pos[1], end_pos[2] - start_pos[2]]
+    return [start_pos, delta]
 endfunc
 
-func! codepainter#paintText() range
-    let [start_pos, delta_pos, sel] = s:GrabSelectionValues()
+func! s:MarkSelection(start_pos, delta_pos, v_mode)
     let l:paint_name = "paint" . g:paint_n
-    echom start_pos
-    echom delta_pos
-    "echom sel
-    "selection on the same line
-    if delta_pos[0] == 0
+    if a:delta_pos[0] == 0
         "calc n of bytes on the same line
-        call matchaddpos(l:paint_name, [[start_pos[1], start_pos[2], delta_pos[1] + 1]])
+        call matchaddpos(l:paint_name, [[a:start_pos[1], a:start_pos[2], a:delta_pos[1] + 1]])
     else
         "more than 1 line
-        "if #lines != #(\n), I will assume it's using visual block mode
-        if delta_pos[0] == count(sel, "\0x0a")
-            " 'normal' visual mode
-            call matchaddpos(l:paint_name, s:GetLinesList(start_pos, delta_pos))
-        else
-            "block visual mode
+        if a:v_mode == 'v' "visual mode
             let line = 0
-            while line <= delta_pos[0]
-                echom line
-                call matchaddpos(l:paint_name, [[start_pos[1] + line, start_pos[2], delta_pos[1] + 1 ]])
+            while line < a:delta_pos[0]
+                call matchaddpos(l:paint_name, [a:start_pos[1] + line])
+                let line += 1
+            endwhile
+            call matchaddpos(l:paint_name,
+            \ [[a:start_pos[1] + line, 1, a:start_pos[2] + a:delta_pos[1] ]])
+
+        else "block visual mode
+            let line = 0
+            while line <= a:delta_pos[0]
+                call matchaddpos(l:paint_name,
+                \ [[a:start_pos[1] + line, a:start_pos[2], a:delta_pos[1] + 1 ]])
                 let line += 1
             endwhile
         endif
     endif
 endfunc
 
-vnoremap <F2> :<c-u>call codepainter#paintText()<cr>
+func! codepainter#paintText(v_mode) range
+    let [start_pos, delta_pos] = s:GrabSelectionValues()
+    echom "mode $" . a:v_mode . "$"
+    echom start_pos
+    echom delta_pos
+    "mark text
+    call s:MarkSelection(start_pos, delta_pos, a:v_mode)
+endfunc
 
+vnoremap <F2> :<c-u>call codepainter#paintText(visualmode())<cr>
+nnoremap <F2> :<c-u>call codepainter#paintText('')<cr>
 "Commands---------------------------------
 
 command! -nargs=1 PainterPickColor call codepainter#ChangeColor(<f-args>)
 command! -nargs=0 PainterEraseAll call codepainter#EraseAll()
-command! -nargs=1 PainterChangeDelimiter call codepainter#ChangeDelimiter(<f-args>)
 
 func! codepainter#EraseAll()
   "clean all delimiters
@@ -182,30 +97,6 @@ func! codepainter#EraseAll()
     endif
   let index = index + 1
   endwhile
-endfunc
-
-func! codepainter#ChangeDelimiter(nDelimiter)
-    let l:nDeli = s:ValidateDelimiter(a:nDelimiter)
-    if l:nDeli == ""
-        return
-    endif
-    "change every limiter being used
-    let l:deli = substitute(g:delimiter, "d", '\\([0-9]\\)', "")
-    let l:nDeli = substitute(l:nDeli, "d", '\\1', "")
-    silent! execute '%s/' . l:deli . "/" . l:nDeli . "/g"
-    "recreate every matching rule
-    let index = 0
-    while index < 10
-      if g:paint_indexes[index] != 0
-        call matchdelete(g:paint_indexes[index])
-        let paint_name = "paint" . index
-        let regex = substitute(l:nDeli, '\\1', index, "") . ".*"
-        let g:paint_indexes[index] = matchadd(paint_name, regex)
-      endif
-      let index = index + 1
-    endwhile
-    "update global variable
-    let g:delimiter = a:nDelimiter
 endfunc
 
 func! codepainter#ChangeColor(nPaint)
