@@ -62,7 +62,7 @@ func! s:UnmarkSelection(color_index, selection, deli)
     "check if there is another marker
     "save cursor position
     let save_pos = getpos('.')
-    "go to beggining of buffer
+    "go to beginning of buffer
     call setpos('.', [0,0,0,0])
     if search(a:deli, "W") == 0
       "no more markers for this index, erase match rule
@@ -96,26 +96,69 @@ endfunc
 
 "Thanks @Xavier T. for subtitution on variable https://stackoverflow.com/questions/4864073/using-substitute-on-a-variable"
 
+"func! codepainter#paintText() range
+"  let save_x = getreg("x")
+"  let save_x_type = getregtype("x")
+"  "copy selection to register x
+"  let @x = ""
+"  silent! normal! gv"xx
+"  let l:selection = getreg("x")
+"  "build delimiter
+"  let l:deli = substitute(g:delimiter, "d", g:paint_n, "")
+"  "check if its already painted
+"  if l:selection[0:len(g:delimiter)-1] =~# substitute(g:delimiter, "d", "[0-9]", "")
+"    let l:selection = s:UnmarkSelection(g:paint_n, l:selection, l:deli)
+"  else
+"    let l:selection = s:MarkSelection(g:paint_n, l:selection, l:deli)
+"  endif
+"  "paste x register
+"  let @x = l:selection
+"  silent! normal! "xP
+"  "restore x reg
+"  call setreg("x", save_x, save_x_type)
+"endfunc
+
+func! s:GrabSelectionValues() range
+    let start_pos = getpos("'<")
+    let end_pos = getpos("'>")
+    let delta = [0,0]
+    let delta[0] = end_pos[1] - start_pos[1]
+    let delta[1] = end_pos[2] - start_pos[2]
+    let save_x = getreg("x")
+    let save_x_type = getregtype("x")
+    "copy selection to register x
+    let @x = ""
+    silent! normal! gv"xy
+    let l:selection = getreg("x")
+    return [start_pos, delta, l:selection]
+endfunc
+
 func! codepainter#paintText() range
-  let save_x = getreg("x")
-  let save_x_type = getregtype("x")
-  "copy selection to register x
-  let @x = ""
-  silent! normal! gv"xx
-  let l:selection = getreg("x")
-  "build delimiter
-  let l:deli = substitute(g:delimiter, "d", g:paint_n, "")
-  "check if its already painted
-  if l:selection[0:len(g:delimiter)-1] =~# substitute(g:delimiter, "d", "[0-9]", "")
-    let l:selection = s:UnmarkSelection(g:paint_n, l:selection, l:deli)
-  else
-    let l:selection = s:MarkSelection(g:paint_n, l:selection, l:deli)
-  endif
-  "paste x register
-  let @x = l:selection
-  silent! normal! "xP
-  "restore x reg
-  call setreg("x", save_x, save_x_type)
+    let [start_pos, delta_pos, sel] = s:GrabSelectionValues()
+    let l:paint_name = "paint" . g:paint_n
+    echom start_pos
+    echom delta_pos
+    "echom sel
+    "selection on the same line
+    if delta_pos[0] == 0
+        "calc n of bytes on the same line
+        call matchaddpos(l:paint_name, [[start_pos[1], start_pos[2], delta_pos[1] + 1]])
+    else
+        "more than 1 line
+        "if #lines != #(\n), I will assume it's using visual block mode
+        if delta_pos[0] == count(sel, "\0x0a")
+            " 'normal' visual mode
+            call matchaddpos(l:paint_name, s:GetLinesList(start_pos, delta_pos))
+        else
+            "block visual mode
+            let line = 0
+            while line <= delta_pos[0]
+                echom line
+                call matchaddpos(l:paint_name, [[start_pos[1] + line, start_pos[2], delta_pos[1] + 1 ]])
+                let line += 1
+            endwhile
+        endif
+    endif
 endfunc
 
 vnoremap <F2> :<c-u>call codepainter#paintText()<cr>
