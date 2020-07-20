@@ -70,9 +70,6 @@ endfunc
 
 func! codepainter#paintText(v_mode) range
     let [start_pos, delta_pos] = s:GrabSelectionValues()
-    echom "mode $" . a:v_mode . "$"
-    echom start_pos
-    echom delta_pos
     "mark text
     call s:MarkSelection(start_pos, delta_pos, a:v_mode)
 endfunc
