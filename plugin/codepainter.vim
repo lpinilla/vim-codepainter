@@ -18,6 +18,7 @@ hi paint9 gui=reverse guifg=#C2B330 guibg=#2E3440
 
 let g:paint_indexes = [0,0,0,0,0,0,0,0,0,0]
 let g:paint_n = 0
+let g:layer0 = nvim_create_namespace("layer0")
 
 function! s:ValidateColorIndex(input)
   let l:n = str2nr(a:input)
@@ -45,23 +46,26 @@ func! s:MarkSelection(start_pos, delta_pos, v_mode)
     let l:paint_name = "paint" . g:paint_n
     if a:delta_pos[0] == 0
         "calc n of bytes on the same line
-        call matchaddpos(l:paint_name, [[a:start_pos[1], a:start_pos[2], a:delta_pos[1] + 1]])
+        call nvim_buf_add_highlight(0, g:layer0, l:paint_name,
+                    \ a:start_pos[1] - 1,
+                    \ a:start_pos[2] - 1, a:start_pos[2] + a:delta_pos[1])
     else
         "more than 1 line
         if a:v_mode == 'v' "visual mode
             let line = 0
             while line < a:delta_pos[0]
-                call matchaddpos(l:paint_name, [a:start_pos[1] + line])
+                call nvim_buf_add_highlight(0, g:layer0, l:paint_name,
+                            \ a:start_pos[1] - 1 + line,
+                            \ a:start_pos[2] - 1, -1)
                 let line += 1
             endwhile
-            call matchaddpos(l:paint_name,
-            \ [[a:start_pos[1] + line, 1, a:start_pos[2] + a:delta_pos[1] ]])
-
+            call nvim_buf_add_highlight(0, g:layer0, l:paint_name,
+            \ a:start_pos[1]+line - 1, 0, a:start_pos[2] + a:delta_pos[1])
         else "block visual mode
             let line = 0
             while line <= a:delta_pos[0]
-                call matchaddpos(l:paint_name,
-                \ [[a:start_pos[1] + line, a:start_pos[2], a:delta_pos[1] + 1 ]])
+                call nvim_buf_add_highlight(0, g:layer0, l:paint_name,
+                \ a:start_pos[1]+ line-1, a:start_pos[2] - 1, a:start_pos[2] +  a:delta_pos[1])
                 let line += 1
             endwhile
         endif
