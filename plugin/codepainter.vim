@@ -55,17 +55,19 @@ func! s:MarkSelection(start_pos, end_pos, v_mode)
         if a:v_mode == 'v' "visual mode
             let line = 0
             while line < l:delta_pos[0]
+                let l:aux_pos = a:start_pos
+                let l:aux_pos[2] += line
                 let l:mark = nvim_buf_add_highlight(0, 0, g:paint_name,
                             \ a:start_pos[1] - 1 + line,
                             \ a:start_pos[2] - 1, -1)
-                let g:marks[a:start_pos[1] + line - 1] =
+                let g:marks[a:start_pos[1] + line] =
                             \ [a:start_pos, a:end_pos, l:mark, g:paint_name]
                 let line += 1
             endwhile
             let l:mark = nvim_buf_add_highlight(0, 0, g:paint_name,
-            \ a:start_pos[1]+line - 1, 0,
+            \ a:start_pos[1] + line - 1, 0,
             \ a:start_pos[2] + l:delta_pos[1])
-            let g:marks[a:start_pos[1] + line - 1] =
+            let g:marks[a:start_pos[1] + line] =
                     \  [a:start_pos, a:end_pos, l:mark, g:paint_name]
         else "block visual mode
             let line = 0
@@ -86,15 +88,27 @@ func! codepainter#paintText(v_mode) range
     "mark text
     let l:start_pos = getpos("'<")
     let l:end_pos = getpos("'>")
+    "if last character is \n, subtract 1 from column (to avoid problems)
+    if getline("'>")[col("'>") - 1] == "0x0a"
+        let l:end_pos[2] -= 1
+    endif
     "check if it was stored, it means we need to unmark
     if has_key(g:marks, l:start_pos[1])
         let l:known_mark = g:marks[l:start_pos[1]]
         let l:col_deltas = [l:start_pos[2] - l:known_mark[0][2], l:end_pos[2] - l:known_mark[1][2]]
         "inside the known mark -> unmark
         if (l:col_deltas[0] >= 0 && l:col_deltas[1] <= 0)
+            echom "here"
             call nvim_buf_clear_namespace(0, l:known_mark[2], l:start_pos[1] - 1, -1)
-            "if(l:known_mark[3] == g:paint)
+            if(l:known_mark[3] != g:paint_name)
+                call s:MarkSelection(l:start_pos, l:end_pos, a:v_mode)
+            endif
             unlet g:marks[l:start_pos[1]]
+        elseif (l:col_deltas[0] >= 0 && l:col_deltas[1] > 0) "extending mark
+            call nvim_buf_clear_namespace(0, l:known_mark[2], l:start_pos[1] - 1, -1)
+            call s:MarkSelection(l:start_pos, l:end_pos, a:v_mode)
+        elseif (l:col_deltas[0] < 0 && l:col_deltas[1] >= 0)
+            call nvim_buf_clear_namespace(0, l:known_mark[2], l:start_pos[1] - 1, -1)
         endif
     else
         call s:MarkSelection(l:start_pos, l:end_pos, a:v_mode)
