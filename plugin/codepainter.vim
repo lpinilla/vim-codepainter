@@ -18,13 +18,10 @@ hi paint9 gui=reverse guifg=#C2B330 guibg=#2E3440
 
 let g:paint_indexes = [0,0,0,0,0,0,0,0,0,0]
 let g:paint_n = 0
-let g:layer0 = nvim_create_namespace("layer0")
-let g:markings = {}
+let g:marks = {}
 "map holding the markings folowing this structure
-"markings = {
-"   namespace: (string) string,
-"   id: (int) line_n,
-"   marks: [[int start_col, int end_col, string paint_name]]
+"marks = {
+"   <key> line: <val> [start_pos, end_pos, mark_id, paint_name]
 "}
 
 function! s:ValidateColorIndex(input)
@@ -46,38 +43,66 @@ func! s:MarkSelection(start_pos, end_pos, v_mode)
     let l:paint_name = "paint" . g:paint_n
     let l:delta_pos = [a:end_pos[1] - a:start_pos[1], a:end_pos[2] - a:start_pos[2]]
     let l:mark = 0
+    "on the same line
     if l:delta_pos[0] == 0
         "calc n of bytes on the same line
-        let l:mark = nvim_buf_add_highlight(0, g:layer0, l:paint_name,
+        let l:mark = nvim_buf_add_highlight(0, 0, l:paint_name,
                     \ a:start_pos[1] - 1,
-                    \ a:start_pos[2] - 1, a:start_pos[2] + l:delta_pos[1])
+                    \ a:start_pos[2] - 1,
+                    \ a:start_pos[2] + l:delta_pos[1])
+        let g:marks[a:start_pos[1]] =
+                    \ [a:start_pos, a:end_pos, l:mark, l:paint_name]
     else
         "more than 1 line
         if a:v_mode == 'v' "visual mode
             let line = 0
             while line < l:delta_pos[0]
-                let l:mark = nvim_buf_add_highlight(0, g:layer0, l:paint_name,
+                let l:mark = nvim_buf_add_highlight(0, 0, l:paint_name,
                             \ a:start_pos[1] - 1 + line,
                             \ a:start_pos[2] - 1, -1)
+                let g:marks[a:start_pos[1] + line - 1] =
+                            \ [a:start_pos, a:end_pos, l:mark, l:paint_name]
                 let line += 1
             endwhile
-            let l:mark = nvim_buf_add_highlight(0, g:layer0, l:paint_name,
-            \ a:start_pos[1]+line - 1, 0, a:start_pos[2] + l:delta_pos[1])
+            let l:mark = nvim_buf_add_highlight(0, 0, l:paint_name,
+            \ a:start_pos[1]+line - 1, 0,
+            \ a:start_pos[2] + l:delta_pos[1])
+            let g:marks[a:start_pos[1] + line - 1] =
+                    \  [a:start_pos, a:end_pos, l:mark, l:paint_name]
+
         else "block visual mode
             let line = 0
             while line <= l:delta_pos[0]
-                let l:mark = nvim_buf_add_highlight(0, g:layer0, l:paint_name,
-                \ a:start_pos[1]+ line-1, a:start_pos[2] - 1, a:start_pos[2] +  l:delta_pos[1])
+                let l:mark = nvim_buf_add_highlight(0, 0, l:paint_name,
+                \ a:start_pos[1]+ line-1,
+                \ a:start_pos[2] - 1,
+                \ a:start_pos[2] +  l:delta_pos[1])
+                let g:marks[a:start_pos[1] + line] =
+                        \  [a:start_pos, a:end_pos, l:mark, l:paint_name]
                 let line += 1
             endwhile
         endif
     endif
-    echom l:mark
 endfunc
 
 func! codepainter#paintText(v_mode) range
     "mark text
-    call s:MarkSelection(getpos("'<"), getpos("'>"), a:v_mode)
+    let l:start_pos = getpos("'<")
+    let l:end_pos = getpos("'>")
+    "check if it was stored, it means we need to unmark
+    if has_key(g:marks, l:start_pos[1])
+        let l:known_mark = g:marks[l:start_pos[1]]
+        let l:col_deltas = [l:start_pos[2] - l:known_mark[0][2], l:end_pos[2] - l:known_mark[1][2]]
+        echom l:col_deltas
+        "inside the known mark -> unmark
+        if (l:col_deltas[0] >= 0 && l:col_deltas[1] <= 0)
+            echom l:known_mark[2]
+            call nvim_buf_clear_namespace(0, l:known_mark[2], l:start_pos[1] - 1, -1)
+            unlet g:marks[l:start_pos[1]]
+        endif
+    else
+        call s:MarkSelection(l:start_pos, l:end_pos, a:v_mode)
+    endif
 endfunc
 
 vnoremap <F2> :<c-u>call codepainter#paintText(visualmode())<cr>
@@ -88,7 +113,12 @@ command! -nargs=1 PainterPickColor call codepainter#ChangeColor(<f-args>)
 command! -nargs=0 PainterEraseAll call codepainter#EraseAll()
 
 func! codepainter#EraseAll()
-    silent! call nvim_buf_clear_namespace(0, g:layer0, 1, -1)
+    "loop through the list and delete each one
+    for key in keys(g:marks)
+        echom g:marks[key]
+        silent! call nvim_buf_clear_namespace(0, g:marks[key][2], 1, -1)
+    endfor
+    let g:marks = {}
 endfunc
 
 func! codepainter#ChangeColor(nPaint)
