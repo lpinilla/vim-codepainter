@@ -17,7 +17,7 @@ hi paint8 gui=reverse guifg=#6868BD guibg=#2E3440
 hi paint9 gui=reverse guifg=#C2B330 guibg=#2E3440
 
 let g:paint_indexes = [0,0,0,0,0,0,0,0,0,0]
-let g:paint_n = 0
+let g:paint_name = "paint0"
 let g:marks = {}
 "map holding the markings folowing this structure
 "marks = {
@@ -40,45 +40,42 @@ endfunction
 
 
 func! s:MarkSelection(start_pos, end_pos, v_mode)
-    let l:paint_name = "paint" . g:paint_n
     let l:delta_pos = [a:end_pos[1] - a:start_pos[1], a:end_pos[2] - a:start_pos[2]]
     let l:mark = 0
     "on the same line
     if l:delta_pos[0] == 0
         "calc n of bytes on the same line
-        let l:mark = nvim_buf_add_highlight(0, 0, l:paint_name,
+        let l:mark = nvim_buf_add_highlight(0, 0, g:paint_name,
                     \ a:start_pos[1] - 1,
                     \ a:start_pos[2] - 1,
                     \ a:start_pos[2] + l:delta_pos[1])
         let g:marks[a:start_pos[1]] =
-                    \ [a:start_pos, a:end_pos, l:mark, l:paint_name]
-    else
-        "more than 1 line
+                    \ [a:start_pos, a:end_pos, l:mark, g:paint_name]
+    else "more than 1 line
         if a:v_mode == 'v' "visual mode
             let line = 0
             while line < l:delta_pos[0]
-                let l:mark = nvim_buf_add_highlight(0, 0, l:paint_name,
+                let l:mark = nvim_buf_add_highlight(0, 0, g:paint_name,
                             \ a:start_pos[1] - 1 + line,
                             \ a:start_pos[2] - 1, -1)
                 let g:marks[a:start_pos[1] + line - 1] =
-                            \ [a:start_pos, a:end_pos, l:mark, l:paint_name]
+                            \ [a:start_pos, a:end_pos, l:mark, g:paint_name]
                 let line += 1
             endwhile
-            let l:mark = nvim_buf_add_highlight(0, 0, l:paint_name,
+            let l:mark = nvim_buf_add_highlight(0, 0, g:paint_name,
             \ a:start_pos[1]+line - 1, 0,
             \ a:start_pos[2] + l:delta_pos[1])
             let g:marks[a:start_pos[1] + line - 1] =
-                    \  [a:start_pos, a:end_pos, l:mark, l:paint_name]
-
+                    \  [a:start_pos, a:end_pos, l:mark, g:paint_name]
         else "block visual mode
             let line = 0
             while line <= l:delta_pos[0]
-                let l:mark = nvim_buf_add_highlight(0, 0, l:paint_name,
+                let l:mark = nvim_buf_add_highlight(0, 0, g:paint_name,
                 \ a:start_pos[1]+ line-1,
                 \ a:start_pos[2] - 1,
                 \ a:start_pos[2] +  l:delta_pos[1])
                 let g:marks[a:start_pos[1] + line] =
-                        \  [a:start_pos, a:end_pos, l:mark, l:paint_name]
+                        \  [a:start_pos, a:end_pos, l:mark, g:paint_name]
                 let line += 1
             endwhile
         endif
@@ -93,11 +90,10 @@ func! codepainter#paintText(v_mode) range
     if has_key(g:marks, l:start_pos[1])
         let l:known_mark = g:marks[l:start_pos[1]]
         let l:col_deltas = [l:start_pos[2] - l:known_mark[0][2], l:end_pos[2] - l:known_mark[1][2]]
-        echom l:col_deltas
         "inside the known mark -> unmark
         if (l:col_deltas[0] >= 0 && l:col_deltas[1] <= 0)
-            echom l:known_mark[2]
             call nvim_buf_clear_namespace(0, l:known_mark[2], l:start_pos[1] - 1, -1)
+            "if(l:known_mark[3] == g:paint)
             unlet g:marks[l:start_pos[1]]
         endif
     else
@@ -110,6 +106,7 @@ nnoremap <F2> :<c-u>call codepainter#paintText('')<cr>
 "Commands---------------------------------
 
 command! -nargs=1 PainterPickColor call codepainter#ChangeColor(<f-args>)
+command! -nargs=1 PainterPickColorByName call codepainter#ChangeColorByName(<f-args>)
 command! -nargs=0 PainterEraseAll call codepainter#EraseAll()
 
 func! codepainter#EraseAll()
@@ -126,6 +123,13 @@ func! codepainter#ChangeColor(nPaint)
   if l:paint != 0 && empty(l:paint)
     return
   endif
-  let g:paint_n = l:paint
+  let g:paint_name = "paint" . l:paint
+endfunc
+
+func! codepainter#ChangeColorByName(strPaint)
+    if a:strPaint != type(1)
+        return
+    endif
+    let g:paint_name = substitute(a:strPaint, "\"", "" ,"g")
 endfunc
 
