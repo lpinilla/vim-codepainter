@@ -20,6 +20,12 @@ let g:paint_indexes = [0,0,0,0,0,0,0,0,0,0]
 let g:paint_n = 0
 let g:layer0 = nvim_create_namespace("layer0")
 let g:markings = {}
+"map holding the markings folowing this structure
+"markings = {
+"   namespace: (string) string,
+"   id: (int) line_n,
+"   marks: [[int start_col, int end_col, string paint_name]]
+"}
 
 function! s:ValidateColorIndex(input)
   let l:n = str2nr(a:input)
@@ -39,9 +45,10 @@ endfunction
 func! s:MarkSelection(start_pos, end_pos, v_mode)
     let l:paint_name = "paint" . g:paint_n
     let l:delta_pos = [a:end_pos[1] - a:start_pos[1], a:end_pos[2] - a:start_pos[2]]
+    let l:mark = 0
     if l:delta_pos[0] == 0
         "calc n of bytes on the same line
-        call nvim_buf_add_highlight(0, g:layer0, l:paint_name,
+        let l:mark = nvim_buf_add_highlight(0, g:layer0, l:paint_name,
                     \ a:start_pos[1] - 1,
                     \ a:start_pos[2] - 1, a:start_pos[2] + l:delta_pos[1])
     else
@@ -49,22 +56,23 @@ func! s:MarkSelection(start_pos, end_pos, v_mode)
         if a:v_mode == 'v' "visual mode
             let line = 0
             while line < l:delta_pos[0]
-                call nvim_buf_add_highlight(0, g:layer0, l:paint_name,
+                let l:mark = nvim_buf_add_highlight(0, g:layer0, l:paint_name,
                             \ a:start_pos[1] - 1 + line,
                             \ a:start_pos[2] - 1, -1)
                 let line += 1
             endwhile
-            call nvim_buf_add_highlight(0, g:layer0, l:paint_name,
+            let l:mark = nvim_buf_add_highlight(0, g:layer0, l:paint_name,
             \ a:start_pos[1]+line - 1, 0, a:start_pos[2] + l:delta_pos[1])
         else "block visual mode
             let line = 0
             while line <= l:delta_pos[0]
-                call nvim_buf_add_highlight(0, g:layer0, l:paint_name,
+                let l:mark = nvim_buf_add_highlight(0, g:layer0, l:paint_name,
                 \ a:start_pos[1]+ line-1, a:start_pos[2] - 1, a:start_pos[2] +  l:delta_pos[1])
                 let line += 1
             endwhile
         endif
     endif
+    echom l:mark
 endfunc
 
 func! codepainter#paintText(v_mode) range
@@ -80,18 +88,7 @@ command! -nargs=1 PainterPickColor call codepainter#ChangeColor(<f-args>)
 command! -nargs=0 PainterEraseAll call codepainter#EraseAll()
 
 func! codepainter#EraseAll()
-  "clean all delimiters
-  let l:delimiter = substitute(g:delimiter, "d", "[0-9]", "")
-  silent! execute '%s/' . l:delimiter . "//g"
-  "erase all match rules listed
-  let index = 0
-  while index < 10
-    if g:paint_indexes[index] != 0
-      call matchdelete(g:paint_indexes[index])
-      let g:paint_indexes[index] = 0
-    endif
-  let index = index + 1
-  endwhile
+    silent! call nvim_buf_clear_namespace(0, g:layer0, 1, -1)
 endfunc
 
 func! codepainter#ChangeColor(nPaint)
