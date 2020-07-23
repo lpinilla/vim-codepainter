@@ -11,6 +11,7 @@ hi paint8 gui=reverse guifg=#6868BD guibg=#2E3440
 hi paint9 gui=reverse guifg=#C2B330 guibg=#2E3440
 
 let g:paint_name = "paint0"
+let g:auto_load_marks = 1 "look for json files with the same name and load them by default
 let g:marks = {}
 "map holding the markings folowing this structure
 "marks = {
@@ -168,7 +169,7 @@ func! codepainter#ChangeColorByName(strPaint) abort
 endfunc
 
 func! codepainter#SaveMarks(...) abort
-    let l:path = a:0 == 0 ? expand("%:t") : substitute(a:1, "\"", "","g")
+    let l:path = a:0 == 0 ? expand("%") : substitute(a:1, "\"", "","g")
     let l:path = substitute(l:path, expand("%:e"), "json", "")
     let jsonString = json_encode(g:marks)
     execute ("redir! >" . l:path)
@@ -176,3 +177,21 @@ func! codepainter#SaveMarks(...) abort
     redir END
     echom "Saved on " . l:path
 endfunc
+
+func! codepainter#LoadMarks(...) abort
+    let l:path = a:0 == 0 ? expand("%") : substitute(a:1, "\"", "","g")
+    let l:path = substitute(l:path, expand("%:e"), "json", "")
+    let l:file = readfile(l:path)
+    let loaded_marks = json_decode(l:file)
+    let saved_paint = g:paint_name
+    for l:mark in keys(loaded_marks)
+        let l:aux = loaded_marks[l:mark]
+        let g:paint_name = l:aux[3]
+        call s:MarkSelection(l:aux[0], l:aux[1], "v")
+    endfor
+    let g:paint_name = saved_paint
+    echom "Loaded marks from " . l:path
+endfunc
+
+"load marks for this file
+if g:auto_load_marks | silent! call codepainter#LoadMarks(substitute(expand("%"), expand("%:e"), "json", "")) | endif
