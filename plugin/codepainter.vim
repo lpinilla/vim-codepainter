@@ -143,7 +143,7 @@ func! codepainter#ChangeColor(nPaint)
 endfunc
 
 func! codepainter#ChangeColorByName(strPaint)
-    if a:strPaint != type(1)
+    if a:strPaint != type(1) || empty(a:strPaint)
         return
     endif
     let g:paint_name = substitute(a:strPaint, "\"", "" ,"g")
