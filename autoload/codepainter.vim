@@ -51,7 +51,7 @@ function! s:ValidateDelimiter(input) abort
 endfunction
 
 "remove marker in every line of selection
-function! s:UnmarkSelection(color_index, selection, deli)
+function! s:UnmarkSelection(color_index, selection, deli) abort
     let l:ret = substitute(a:selection, a:deli, "" , "g")
     "check if there is another marker
     "save cursor position
@@ -68,7 +68,7 @@ function! s:UnmarkSelection(color_index, selection, deli)
     return l:ret
 endfunction
 
-function! s:MarkSelection(color_index, selection, deli)
+function! s:MarkSelection(color_index, selection, deli) abort
     "add marker
     let l:ret = a:deli . a:selection
     "hack to make it more comfortable
@@ -112,7 +112,7 @@ function! codepainter#paintText() range
   call setreg("x", save_x, save_x_type)
 endfunction
 
-function! codepainter#EraseAll()
+function! codepainter#EraseAll() abort
   "clean all delimiters
   let l:delimiter = substitute(g:delimiter, "d", "[0-9]", "")
   silent! execute '%s/' . l:delimiter . "//g"
@@ -127,7 +127,7 @@ function! codepainter#EraseAll()
   endwhile
 endfunction
 
-function! codepainter#ChangeDelimiter(nDelimiter)
+function! codepainter#ChangeDelimiter(nDelimiter) abort
   let l:nDeli = s:ValidateDelimiter(a:nDelimiter)
   if l:nDeli == ""
       return
@@ -151,7 +151,7 @@ function! codepainter#ChangeDelimiter(nDelimiter)
   let g:delimiter = a:nDelimiter
 endfunction
 
-function! codepainter#ChangeColor(nPaint)
+function! codepainter#ChangeColor(nPaint) abort
   let l:paint = s:ValidateColorIndex(a:nPaint)
   if l:paint != 0 && empty(l:paint)
     return
