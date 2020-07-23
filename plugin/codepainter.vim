@@ -116,6 +116,9 @@ func! codepainter#paintText(v_mode) range
     "mark text
     let l:start_pos = getpos("'<")
     let l:end_pos = getpos("'>")
+    if l:start_pos == [0,0,0,0] && l:end_pos == [0,0,0,0]
+        return
+    endif
     "if last character is \n, subtract 1 from column (to avoid problems)
     if getline("'>")[col("'>") - 1] == "0x0a"
         let l:end_pos[2] -= 1
@@ -154,6 +157,7 @@ nnoremap <F2> :<c-u>call codepainter#paintText('')<cr>
 command! -nargs=1 PainterPickColor call codepainter#ChangeColor(<f-args>)
 command! -nargs=1 PainterPickColorByName call codepainter#ChangeColorByName(<f-args>)
 command! -nargs=0 PainterEraseAll call codepainter#EraseAll()
+command! -nargs=? PainterSaveMarks call codepainter#SaveMarks(<f-args>)
 
 func! codepainter#EraseAll()
     "loop through the list and delete each one
@@ -179,6 +183,12 @@ func! codepainter#ChangeColorByName(strPaint)
     let g:paint_name = substitute(a:strPaint, "\"", "" ,"g")
 endfunc
 
-func! codepainter#SaveMarks()
-    silent! call writefile(split(g:marks, "\n", 1), glob('/marks.json'), 'b')
+func! codepainter#SaveMarks(...)
+    let l:path = a:0 == 0 ? expand("%:t") : substitute(a:1, "\"", "","g")
+    let l:path = substitute(l:path, expand("%:e"), "json", "")
+    let jsonString = json_encode(g:marks)
+    execute ("redir! >" . l:path)
+    silent! echon jsonString
+    redir END
+    echom "Saved on " . l:path
 endfunc
