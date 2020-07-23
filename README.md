@@ -31,7 +31,3 @@ If you want to remove every marker and every match rule, you should run the comm
 ### Known issues
 
 If you first paint something with a color and then apply another color to the same selection, it will result in an error. In this case, you should first unpaint the desired area with the paint color it already has and then apply the new color.
-
-### Contributions
-
-In case you find a bug and want to fix it or add new features, feel free to fork the repo and create a pull request!
