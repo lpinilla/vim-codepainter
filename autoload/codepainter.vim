@@ -38,11 +38,7 @@ func! s:AuxMark(line, start_col, end_col) abort
     else
         let l:mark = len(g:marks)
         call prop_type_add( l:mark, {'highlight': g:paint_name })
-        if a:end_col == -1
-            call prop_add( a:line, a:start_col, {'length' : "99999", 'type': l:mark }) "find a way to don't hardcode the length
-        else
-            call prop_add( a:line, a:start_col, {'length' : a:end_col - a:start_col + 1, 'type': l:mark })
-        endif
+        call prop_add( a:line, a:start_col, {'length' : a:end_col == -1 ? "99999" : a:end_col - a:start_col + 1 , 'type': l:mark })
         return l:mark
     endif
 endfunc
@@ -142,10 +138,16 @@ endfunc
 
 func! codepainter#EraseAll() abort
     "loop through the list and delete each one
-    for key in keys(g:marks)
-        echom g:marks[key]
-        silent! call nvim_buf_clear_namespace(0, g:marks[key][2], 1, -1)
-    endfor
+    if has('nvim')
+        for key in keys(g:marks)
+            silent! call nvim_buf_clear_namespace(0, g:marks[key][2], 1, -1)
+        endfor
+    else
+        for key in keys(g:marks)
+            silent! call prop_remove({'type': g:marks[key][2]}, g:marks[key][1][1])
+            silent! call prop_type_delete(g:marks[key][2])
+        endfor
+    endif
     let g:marks = {}
 endfunc
 
