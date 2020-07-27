@@ -32,20 +32,24 @@ function! s:ValidateColorIndex(input) abort
   return l:n
 endfunction
 
-func! s:SameLineMark(start_pos, end_pos, delta_pos) abort
- "calc n of bytes on the same line
+func! s:AuxMark(line, start_col, end_col) abort
     if has('nvim')
-        let l:mark = nvim_buf_add_highlight(0, 0, g:paint_name,
-                    \ a:start_pos[1] - 1,
-                    \ a:start_pos[2] - 1,
-                    \ a:start_pos[2] + a:delta_pos[1])
+        return nvim_buf_add_highlight(0, 0, g:paint_name, a:line - 1, a:start_col - 1, a:end_col)
     else
         let l:mark = len(g:marks)
-        call prop_type_add( l:mark , {'highlight': g:paint_name })
-        call prop_add( a:start_pos[1], a:start_pos[2], {'length' : a:end_pos[2] - a:start_pos[2] + 1, 'type': l:mark })
+        call prop_type_add( l:mark, {'highlight': g:paint_name })
+        if a:end_col == -1
+            call prop_add( a:line, a:start_col, {'length' : "99999", 'type': l:mark }) "find a way to don't hardcode the length
+        else
+            call prop_add( a:line, a:start_col, {'length' : a:end_col - a:start_col + 1, 'type': l:mark })
+        endif
+        return l:mark
     endif
-    let g:marks[a:start_pos[1]] =
-                \ [a:start_pos, a:end_pos, l:mark, g:paint_name]
+endfunc
+
+func! s:SameLineMark(start_pos, end_pos, delta_pos) abort
+    let l:mark = s:AuxMark(a:start_pos[1], a:start_pos[2], a:start_pos[2] + a:delta_pos[1])
+    let g:marks[a:start_pos[1]] = [a:start_pos, a:end_pos, l:mark, g:paint_name]
 endfunc
 
 func! s:VisModeMark(start_pos, end_pos, delta_pos) abort
@@ -56,19 +60,13 @@ func! s:VisModeMark(start_pos, end_pos, delta_pos) abort
         let aux_start_pos[1] += line
         let aux_end_pos[1] += line
         let aux_end_pos[2] = 2147483647 "little hack to say all the line
-        let l:mark = nvim_buf_add_highlight(0, 0, g:paint_name,
-                    \ a:start_pos[1] - 1 + line,
-                    \ a:start_pos[2] - 1, -1)
-        let g:marks[a:start_pos[1] + line] =
-                \  [copy(aux_start_pos), copy(aux_end_pos), l:mark, g:paint_name]
+        let l:mark = s:AuxMark(a:start_pos[1] + line, a:start_pos[2], -1)
+        let g:marks[a:start_pos[1] + line] = [copy(aux_start_pos), copy(aux_end_pos), l:mark, g:paint_name]
         let line += 1
     endwhile
     let aux_start_pos[1] += 1
-    let l:mark = nvim_buf_add_highlight(0, 0, g:paint_name,
-    \ a:start_pos[1] + line - 1, 0,
-    \ a:start_pos[2] + a:delta_pos[1])
-    let g:marks[a:start_pos[1] + line] =
-            \  [aux_start_pos, a:end_pos, l:mark, g:paint_name]
+    let l:mark = s:AuxMark(a:start_pos[1] + line, a:start_pos[2], a:start_pos[2] + a:delta_pos[1])
+    let g:marks[a:start_pos[1] + line] = [aux_start_pos, a:end_pos, l:mark, g:paint_name]
 endfunc
 
 func! s:BlockVisModeMark(start_pos, end_pos, delta_pos) abort
@@ -79,22 +77,14 @@ func! s:BlockVisModeMark(start_pos, end_pos, delta_pos) abort
         let aux_start_pos[1] += line
         let aux_end_pos[1] += line
         let aux_end_pos[2] = a:end_pos[2]
-        let l:mark = nvim_buf_add_highlight(0, 0, g:paint_name,
-                    \ a:start_pos[1] + line - 1,
-                    \ a:start_pos[2] - 1,
-                    \ a:start_pos[2] +  a:delta_pos[1])
-        let g:marks[a:start_pos[1] + line] =
-                    \  [copy(aux_start_pos), copy(aux_end_pos), l:mark, g:paint_name]
+        let l:mark = s:AuxMark(a:start_pos[1] + line, a:start_pos[2], a:start_pos[2] + a:delta_pos[1])
+        let g:marks[a:start_pos[1] + line] = [copy(aux_start_pos), copy(aux_end_pos), l:mark, g:paint_name]
         let line += 1
     endwhile
     let aux_start_pos[1] += 1
     let aux_end_pos[1] += 1
-    let l:mark = nvim_buf_add_highlight(0, 0, g:paint_name,
-                    \ a:start_pos[1] + line - 1,
-                    \ a:start_pos[2] - 1,
-                    \ a:start_pos[2] +  a:delta_pos[1])
-   let g:marks[a:start_pos[1] + line] =
-                    \  [aux_start_pos, aux_end_pos, l:mark, g:paint_name]
+    let l:mark = s:AuxMark(a:start_pos[1] + line, a:start_pos[2], a:start_pos[2] + a:delta_pos[1])
+    let g:marks[a:start_pos[1] + line] = [aux_start_pos, aux_end_pos, l:mark, g:paint_name]
 endfunc
 
 
