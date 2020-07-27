@@ -117,23 +117,31 @@ func! codepainter#paintText(v_mode) range abort
             return
         endif
         let l:known_mark = g:marks[l:start_pos[1] + index]
-        let l:col_deltas = [l:start_pos[2] - l:known_mark[0][2],
-                    \       l:end_pos[2] - l:known_mark[1][2]]
+        let l:col_deltas = [l:start_pos[2] - l:known_mark[0][2], l:end_pos[2] - l:known_mark[1][2]]
         "inside the known mark -> unmark
         if (l:col_deltas[0] >= 0 && l:col_deltas[1] <= 0)
-            call nvim_buf_clear_namespace(0, l:known_mark[2], l:start_pos[1]+index-1,-1)
-            unlet g:marks[l:start_pos[1]+index]
+            call s:AuxUnmark(l:start_pos[1]+ index, l:known_mark[2])
             if(l:known_mark[3] != g:paint_name)
                 call s:MarkSelection(l:start_pos, l:end_pos, a:v_mode)
             endif
         elseif (l:col_deltas[0] >= 0 && l:col_deltas[1] > 0) "extending mark
-            call nvim_buf_clear_namespace(0, l:known_mark[2], l:start_pos[1]+index-1,-1)
+            call s:AuxUnmark(l:start_pos[1]+ index, l:known_mark[2])
             call s:MarkSelection(l:start_pos, l:end_pos, a:v_mode)
-        elseif (l:col_deltas[0] < 0 && l:col_deltas[1] >= 0)
-            call nvim_buf_clear_namespace(0, l:known_mark[2], l:start_pos[1]+index-1,-1)
+        elseif (l:col_deltas[0] < 0 && l:col_deltas[1] >= 0) "outside bounds, treating as unmarking
+            call s:AuxUnmark(l:start_pos[1] + index, l:known_mark[2])
         endif
         let index += 1
     endwhile
+endfunc
+
+func! s:AuxUnmark(line, id)
+    if has('nvim')
+        call nvim_buf_clear_namespace(0, a:id, a:line - 1,-1)
+    else
+        call prop_remove({'type': a:id}, a:line)
+        call prop_type_delete(a:id)
+    endif
+    unlet g:marks[a:line]
 endfunc
 
 func! codepainter#EraseAll() abort
