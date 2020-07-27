@@ -1,14 +1,14 @@
 " defining the colors
-hi paint0 gui=reverse guifg=#A3BE8C guibg=#2E3440
-hi paint1 gui=reverse guifg=#EBCB8B guibg=#2E3440
-hi paint2 gui=reverse guifg=#A1B6BF guibg=#2E3440
-hi paint3 gui=reverse guifg=#BFA484 guibg=#2E3440
-hi paint4 gui=reverse guifg=#BF7A86 guibg=#2E3440
-hi paint5 gui=reverse guifg=#BB9BF2 guibg=#2E3440
-hi paint6 gui=reverse guifg=#676073 guibg=#2E3440
-hi paint7 gui=reverse guifg=#2D401C guibg=#ffffff
-hi paint8 gui=reverse guifg=#6868BD guibg=#2E3440
-hi paint9 gui=reverse guifg=#C2B330 guibg=#2E3440
+hi paint0 gui=reverse cterm=reverse ctermfg=47 ctermbg=236 guifg=#A3BE8C guibg=#2E3440
+hi paint1 gui=reverse cterm=reverse ctermfg=185 ctermbg=236 guifg=#EBCB8B guibg=#2E3440
+hi paint2 gui=reverse cterm=reverse ctermfg=15 ctermbg=236 guifg=#A1B6BF guibg=#2E3440
+hi paint3 gui=reverse cterm=reverse ctermfg=64 ctermbg=236 guifg=#BFA484 guibg=#2E3440
+hi paint4 gui=reverse cterm=reverse ctermfg=167 ctermbg=236 guifg=#BF7A86 guibg=#2E3440
+hi paint5 gui=reverse cterm=reverse ctermfg=176 ctermbg=236 guifg=#BB9BF2 guibg=#2E3440
+hi paint6 gui=reverse cterm=reverse ctermfg=97 ctermbg=236 guifg=#676073 guibg=#2E3440
+hi paint7 gui=reverse cterm=reverse ctermfg=242 ctermbg=15  guifg=#2D401C guibg=#ffffff
+hi paint8 gui=reverse cterm=reverse ctermfg=62 ctermbg=236 guifg=#6868BD guibg=#2E3440
+hi paint9 gui=reverse cterm=reverse ctermfg=142 ctermbg=236 guifg=#C2B330 guibg=#2E3440
 
 let g:paint_name = "paint0"
 let g:auto_load_marks = 1 "look for json files with the same name and load them by default
@@ -34,10 +34,16 @@ endfunction
 
 func! s:SameLineMark(start_pos, end_pos, delta_pos) abort
  "calc n of bytes on the same line
-    let l:mark = nvim_buf_add_highlight(0, 0, g:paint_name,
-                \ a:start_pos[1] - 1,
-                \ a:start_pos[2] - 1,
-                \ a:start_pos[2] + a:delta_pos[1])
+    if has('nvim')
+        let l:mark = nvim_buf_add_highlight(0, 0, g:paint_name,
+                    \ a:start_pos[1] - 1,
+                    \ a:start_pos[2] - 1,
+                    \ a:start_pos[2] + a:delta_pos[1])
+    else
+        let l:mark = len(g:marks)
+        call prop_type_add( l:mark , {'highlight': g:paint_name })
+        call prop_add( a:start_pos[1], a:start_pos[2], {'length' : a:end_pos[2] - a:start_pos[2] + 1, 'type': l:mark })
+    endif
     let g:marks[a:start_pos[1]] =
                 \ [a:start_pos, a:end_pos, l:mark, g:paint_name]
 endfunc
