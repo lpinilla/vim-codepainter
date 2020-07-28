@@ -1,13 +1,13 @@
 " defining the colors
-hi paint0 gui=reverse cterm=reverse ctermfg=47 ctermbg=236 guifg=#A3BE8C guibg=#2E3440
+hi paint0 gui=reverse cterm=reverse ctermfg=47  ctermbg=236 guifg=#A3BE8C guibg=#2E3440
 hi paint1 gui=reverse cterm=reverse ctermfg=185 ctermbg=236 guifg=#EBCB8B guibg=#2E3440
-hi paint2 gui=reverse cterm=reverse ctermfg=15 ctermbg=236 guifg=#A1B6BF guibg=#2E3440
-hi paint3 gui=reverse cterm=reverse ctermfg=64 ctermbg=236 guifg=#BFA484 guibg=#2E3440
+hi paint2 gui=reverse cterm=reverse ctermfg=15  ctermbg=236 guifg=#A1B6BF guibg=#2E3440
+hi paint3 gui=reverse cterm=reverse ctermfg=64  ctermbg=236 guifg=#BFA484 guibg=#2E3440
 hi paint4 gui=reverse cterm=reverse ctermfg=167 ctermbg=236 guifg=#BF7A86 guibg=#2E3440
 hi paint5 gui=reverse cterm=reverse ctermfg=176 ctermbg=236 guifg=#BB9BF2 guibg=#2E3440
-hi paint6 gui=reverse cterm=reverse ctermfg=97 ctermbg=236 guifg=#676073 guibg=#2E3440
+hi paint6 gui=reverse cterm=reverse ctermfg=97  ctermbg=236 guifg=#676073 guibg=#2E3440
 hi paint7 gui=reverse cterm=reverse ctermfg=242 ctermbg=15  guifg=#2D401C guibg=#ffffff
-hi paint8 gui=reverse cterm=reverse ctermfg=62 ctermbg=236 guifg=#6868BD guibg=#2E3440
+hi paint8 gui=reverse cterm=reverse ctermfg=62  ctermbg=236 guifg=#6868BD guibg=#2E3440
 hi paint9 gui=reverse cterm=reverse ctermfg=142 ctermbg=236 guifg=#C2B330 guibg=#2E3440
 
 let g:paint_name = "paint0"
@@ -43,6 +43,16 @@ func! s:AuxMark(line, start_col, end_col) abort
     endif
 endfunc
 
+func! s:AuxUnmark(line, id)
+    if has('nvim')
+        call nvim_buf_clear_namespace(0, a:id, a:line - 1,-1)
+    else
+        call prop_remove({'type': a:id}, a:line)
+        call prop_type_delete(a:id)
+    endif
+    unlet g:marks[a:line]
+endfunc
+
 func! s:SameLineMark(start_pos, end_pos, delta_pos) abort
     let l:mark = s:AuxMark(a:start_pos[1], a:start_pos[2], a:start_pos[2] + a:delta_pos[1])
     let g:marks[a:start_pos[1]] = [a:start_pos, a:end_pos, l:mark, g:paint_name]
@@ -66,9 +76,9 @@ func! s:VisModeMark(start_pos, end_pos, delta_pos) abort
 endfunc
 
 func! s:BlockVisModeMark(start_pos, end_pos, delta_pos) abort
-    let line = 0
     let aux_start_pos = copy(a:start_pos)
     let aux_end_pos = copy(a:start_pos)
+    let line = 0
     while line < a:delta_pos[0]
         let aux_start_pos[1] += line
         let aux_end_pos[1] += line
@@ -83,10 +93,8 @@ func! s:BlockVisModeMark(start_pos, end_pos, delta_pos) abort
     let g:marks[a:start_pos[1] + line] = [aux_start_pos, aux_end_pos, l:mark, g:paint_name]
 endfunc
 
-
 func! s:MarkSelection(start_pos, end_pos, v_mode) abort
-    let l:delta_pos = [ a:end_pos[1] - a:start_pos[1],
-                    \   a:end_pos[2] - a:start_pos[2]]
+    let l:delta_pos = [ a:end_pos[1] - a:start_pos[1], a:end_pos[2] - a:start_pos[2]]
     if l:delta_pos[0] == 0 "on the same line
         call s:SameLineMark(a:start_pos, a:end_pos, l:delta_pos)
     else "more than 1 line
@@ -118,8 +126,7 @@ func! codepainter#paintText(v_mode) range abort
         endif
         let l:known_mark = g:marks[l:start_pos[1] + index]
         let l:col_deltas = [l:start_pos[2] - l:known_mark[0][2], l:end_pos[2] - l:known_mark[1][2]]
-        "inside the known mark -> unmark
-        if (l:col_deltas[0] >= 0 && l:col_deltas[1] <= 0)
+        if (l:col_deltas[0] >= 0 && l:col_deltas[1] <= 0) "inside the known mark -> unmark
             call s:AuxUnmark(l:start_pos[1]+ index, l:known_mark[2])
             if(l:known_mark[3] != g:paint_name)
                 call s:MarkSelection(l:start_pos, l:end_pos, a:v_mode)
@@ -132,16 +139,6 @@ func! codepainter#paintText(v_mode) range abort
         endif
         let index += 1
     endwhile
-endfunc
-
-func! s:AuxUnmark(line, id)
-    if has('nvim')
-        call nvim_buf_clear_namespace(0, a:id, a:line - 1,-1)
-    else
-        call prop_remove({'type': a:id}, a:line)
-        call prop_type_delete(a:id)
-    endif
-    unlet g:marks[a:line]
 endfunc
 
 func! codepainter#EraseAll() abort
@@ -188,7 +185,7 @@ func! codepainter#LoadMarks(...) abort
     let l:path = a:0 == 0 ? expand("%") : substitute(a:1, "\"", "","g")
     let l:path = substitute(l:path, expand("%:e"), "json", "")
     let l:file = readfile(l:path)
-    let loaded_marks = json_decode(l:file)
+    let loaded_marks = json_decode(l:file[0])
     let saved_paint = g:paint_name
     for l:mark in keys(loaded_marks)
         let l:aux = loaded_marks[l:mark]
