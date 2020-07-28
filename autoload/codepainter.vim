@@ -13,7 +13,7 @@ hi paint9 gui=reverse cterm=reverse ctermfg=142 ctermbg=236 guifg=#C2B330 guibg=
 let g:paint_name = "paint0"
 let g:auto_load_marks = 1 "look for json files with the same name and load them by default
 let g:marks = {}
-"map holding the markings folowing this structure
+"dictionary holding the markings folowing this structure
 "marks = {
 "   <key> line: <val> [start_pos, end_pos, mark_id, paint_name]
 "}
