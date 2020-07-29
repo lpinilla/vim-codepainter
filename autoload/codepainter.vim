@@ -13,6 +13,7 @@ hi paint9 gui=reverse cterm=reverse ctermfg=142 ctermbg=236 guifg=#C2B330 guibg=
 let g:paint_name = "paint0"
 let g:auto_load_marks = 1 "look for json files with the same name and load them by default
 let g:marks = {}
+let g:vim_index = 0
 "dictionary holding the markings folowing this structure
 "marks = {
 "   <key> line: <val> [[start_pos, end_pos, mark_id, paint_name]]
@@ -23,9 +24,10 @@ func! s:AuxMark(start_pos, end_pos) abort
     if has('nvim')
         let l:mark = nvim_buf_add_highlight(0, 0, g:paint_name, a:start_pos[1] - 1, a:start_pos[2] - 1, a:end_pos[2])
     else
-        let l:mark = len(g:marks)
-        call prop_type_add(l:mark, {'highlight': g:paint_name })
-        call prop_add( a:start_pos[1], a:start_pos[2], {'length' : a:end_pos[2] == -1 ? "99999" : a:end_pos[2] - a:start_pos[2] + 1 , 'type': l:mark})
+        call prop_type_add(g:vim_index, {'highlight': g:paint_name })
+        call prop_add( a:start_pos[1], a:start_pos[2], {'length' : a:end_pos[2] == -1 ? "99999" : a:end_pos[2] - a:start_pos[2] + 1 , 'type': g:vim_index})
+    let l:mark = g:vim_index
+    let g:vim_index += 1
     endif
     if !has_key(g:marks, a:start_pos[1])
         let g:marks[a:start_pos[1]] = []
@@ -56,7 +58,12 @@ endfunc
 
 func! s:MultiLineMark(start_pos, end_pos, delta_pos, aux_col) abort
     let aux_start_pos = copy(a:start_pos)
-    let aux_end_pos = copy(a:end_pos)
+    if a:aux_col == 2147483647
+        let aux_end_pos = copy(a:end_pos)
+    else
+        let aux_end_pos = copy(a:start_pos)
+        let aux_end_pos[2] = a:end_pos[2]
+    endif
     let line = 0
     while line < a:delta_pos
         let aux_start_pos[1] += line
@@ -66,6 +73,7 @@ func! s:MultiLineMark(start_pos, end_pos, delta_pos, aux_col) abort
         let line += 1
     endwhile
     let aux_start_pos[1] += 1
+    let aux_end_pos[1] += a:aux_col == 2147483647 ? 0 : 1
     call s:AuxMark(aux_start_pos, aux_end_pos)
 endfunc
 
@@ -196,4 +204,4 @@ func! codepainter#LoadMarks(...) abort
 endfunc
 
 "load marks for this file
-if g:auto_load_marks | silent! call codepainter#LoadMarks(substitute(expand("%"), expand("%:e"), "json", "")) | endif
+if g:auto_load_marks | call codepainter#LoadMarks(substitute(expand("%"), expand("%:e"), "json", "")) | endif
