@@ -15,10 +15,9 @@ let g:auto_load_marks = 1 "look for json files with the same name and load them 
 let g:marks = {}
 "dictionary holding the markings folowing this structure
 "marks = {
-"   <key> line: <val> [start_pos, end_pos, mark_id, paint_name]
+"   <key> line: <val> [[start_pos, end_pos, mark_id, paint_name]]
 "}
 
-"func! s:AuxMark(line, start_col, end_col) abort
 func! s:AuxMark(start_pos, end_pos) abort
     let l:mark = 0
     if has('nvim')
@@ -179,8 +178,9 @@ func! codepainter#SaveMarks(...) abort
 endfunc
 
 func! codepainter#LoadMarks(...) abort
-    let l:path = a:0 == 0 ? expand("%") : substitute(a:1, "\"", "","g")
-    let l:path = substitute(l:path, expand("%:e"), "json", "") "TODO: revisar esto
+    let l:path = a:0 == 0 ?
+                \ substitute(expand("%"), expand("%:e"), "json", "") :
+                \ substitute(a:1, "\"", "","g")
     let l:file = readfile(l:path)
     let loaded_marks = json_decode(l:file[0])
     let saved_paint = g:paint_name
