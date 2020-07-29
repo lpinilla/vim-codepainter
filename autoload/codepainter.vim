@@ -58,22 +58,16 @@ endfunc
 
 func! s:MultiLineMark(start_pos, end_pos, delta_pos, aux_col) abort
     let aux_start_pos = copy(a:start_pos)
-    if a:aux_col == 2147483647
-        let aux_end_pos = copy(a:end_pos)
-    else
-        let aux_end_pos = copy(a:start_pos)
-        let aux_end_pos[2] = a:end_pos[2]
-    endif
+    let aux_end_pos = copy(a:start_pos)
+    let aux_end_pos[2] = a:end_pos[2]
     let line = 0
     while line < a:delta_pos
-        let aux_start_pos[1] += line
-        let aux_end_pos[1] += line
         let aux_end_pos[2] = a:aux_col
         call s:AuxMark(aux_start_pos, aux_end_pos)
+        let aux_start_pos[1] += 1
+        let aux_end_pos[1] += 1
         let line += 1
     endwhile
-    let aux_start_pos[1] += 1
-    let aux_end_pos[1] += a:aux_col == 2147483647 ? 0 : 1
     call s:AuxMark(aux_start_pos, aux_end_pos)
 endfunc
 
