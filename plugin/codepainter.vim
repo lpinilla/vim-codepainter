@@ -1,9 +1,9 @@
 " check whether this script is already loaded
 " or the user doesn't want to load it
-if exists("g:loaded_painter")
-  finish
-endif
-let g:loaded_painter = 1
+"if exists("g:loaded_painter")
+"  finish
+"endif
+"let g:loaded_painter = 1
 
 vnoremap <F2> :<c-u>call codepainter#paintText(visualmode())<cr>
 nnoremap <F2> :<c-u>call codepainter#paintText('')<cr>

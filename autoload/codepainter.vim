@@ -18,29 +18,20 @@ let g:marks = {}
 "   <key> line: <val> [start_pos, end_pos, mark_id, paint_name]
 "}
 
-function! s:ValidateColorIndex(input) abort
-  let l:n = str2nr(a:input)
-  if type(l:n) != type(0)
-    echom "input must be digit"
-    return ''
-  else
-    if (l:n < 0 || l:n > 9)
-        echom "Invalid index, must be from 0 to 9"
-        return ''
-    endif
-  endif
-  return l:n
-endfunction
-
-func! s:AuxMark(line, start_col, end_col) abort
+"func! s:AuxMark(line, start_col, end_col) abort
+func! s:AuxMark(start_pos, end_pos) abort
+    let l:mark = 0
     if has('nvim')
-        return nvim_buf_add_highlight(0, 0, g:paint_name, a:line - 1, a:start_col - 1, a:end_col)
+        let l:mark = nvim_buf_add_highlight(0, 0, g:paint_name, a:start_pos[1] - 1, a:start_pos[2] - 1, a:end_pos[2])
     else
         let l:mark = len(g:marks)
-        call prop_type_add( l:mark, {'highlight': g:paint_name })
-        call prop_add( a:line, a:start_col, {'length' : a:end_col == -1 ? "99999" : a:end_col - a:start_col + 1 , 'type': l:mark })
-        return l:mark
+        call prop_type_add(l:mark, {'highlight': g:paint_name })
+        call prop_add( a:start_pos[1], a:start_pos[2], {'length' : a:end_pos[2] == -1 ? "99999" : a:end_pos[2] - a:start_pos[2] + 1 , 'type': l:mark})
     endif
+    if !has_key(g:marks, a:start_pos[1])
+        let g:marks[a:start_pos[1]] = []
+    endif
+    let g:marks[a:start_pos[1]] = add(g:marks[a:start_pos[1]], [copy(a:start_pos), copy(a:end_pos), l:mark, g:paint_name])
 endfunc
 
 func! s:AuxUnmark(line, id)
@@ -50,12 +41,19 @@ func! s:AuxUnmark(line, id)
         call prop_remove({'type': a:id}, a:line)
         call prop_type_delete(a:id)
     endif
-    unlet g:marks[a:line]
+    let idx = 0
+    while idx < len(g:marks[a:line])
+        let l:mark = g:marks[a:line][idx]
+        if l:mark[2] == a:id
+            call remove(g:marks[a:line], idx)
+            break
+        endif
+        let idx += 1
+    endwhile
 endfunc
 
 func! s:SameLineMark(start_pos, end_pos, delta_pos) abort
-    let l:mark = s:AuxMark(a:start_pos[1], a:start_pos[2], a:start_pos[2] + a:delta_pos[1])
-    let g:marks[a:start_pos[1]] = [a:start_pos, a:end_pos, l:mark, g:paint_name]
+    call s:AuxMark(a:start_pos, a:end_pos)
 endfunc
 
 func! s:VisModeMark(start_pos, end_pos, delta_pos) abort
@@ -72,7 +70,7 @@ func! s:VisModeMark(start_pos, end_pos, delta_pos) abort
     endwhile
     let aux_start_pos[1] += 1
     let l:mark = s:AuxMark(a:start_pos[1] + line, a:start_pos[2], a:start_pos[2] + a:delta_pos[1])
-    let g:marks[a:start_pos[1] + line] = [aux_start_pos, a:end_pos, l:mark, g:paint_name]
+    let g:marks[a:start_pos[1] + line] += [aux_start_pos, a:end_pos, l:mark, g:paint_name]
 endfunc
 
 func! s:BlockVisModeMark(start_pos, end_pos, delta_pos) abort
@@ -84,13 +82,13 @@ func! s:BlockVisModeMark(start_pos, end_pos, delta_pos) abort
         let aux_end_pos[1] += line
         let aux_end_pos[2] = a:end_pos[2]
         let l:mark = s:AuxMark(a:start_pos[1] + line, a:start_pos[2], a:start_pos[2] + a:delta_pos[1])
-        let g:marks[a:start_pos[1] + line] = [copy(aux_start_pos), copy(aux_end_pos), l:mark, g:paint_name]
+        let g:marks[a:start_pos[1] + line] += [copy(aux_start_pos), copy(aux_end_pos), l:mark, g:paint_name]
         let line += 1
     endwhile
     let aux_start_pos[1] += 1
     let aux_end_pos[1] += 1
     let l:mark = s:AuxMark(a:start_pos[1] + line, a:start_pos[2], a:start_pos[2] + a:delta_pos[1])
-    let g:marks[a:start_pos[1] + line] = [aux_start_pos, aux_end_pos, l:mark, g:paint_name]
+    let g:marks[a:start_pos[1] + line] += [aux_start_pos, aux_end_pos, l:mark, g:paint_name]
 endfunc
 
 func! s:MarkSelection(start_pos, end_pos, v_mode) abort
@@ -118,27 +116,29 @@ func! codepainter#paintText(v_mode) range abort
         let l:end_pos[2] -= 1
     endif
     let index = 0
-    while index <= l:end_pos[1] - l:start_pos[1]
+    let l:found = 0
+    while l:found == 0 && index <= l:end_pos[1] - l:start_pos[1]
         "if it wasn't stored, we mark it
         if !has_key(g:marks, l:start_pos[1] + index)
             call s:MarkSelection(l:start_pos, l:end_pos, a:v_mode)
             return
         endif
-        let l:known_mark = g:marks[l:start_pos[1] + index]
-        let l:col_deltas = [l:start_pos[2] - l:known_mark[0][2], l:end_pos[2] - l:known_mark[1][2]]
-        if (l:col_deltas[0] >= 0 && l:col_deltas[1] <= 0) "inside the known mark -> unmark
-            call s:AuxUnmark(l:start_pos[1]+ index, l:known_mark[2])
-            if(l:known_mark[3] != g:paint_name)
-                call s:MarkSelection(l:start_pos, l:end_pos, a:v_mode)
+        for known_mark in g:marks[l:start_pos[1] + index]
+            let l:col_deltas = [l:start_pos[2]  - known_mark[0][2], l:end_pos[2] - known_mark[1][2]]
+            if l:col_deltas == [0, 0]
+                let l:found = 1
+                call s:AuxUnmark(l:start_pos[1] + index, known_mark[2])
+                if known_mark[3] != g:paint_name
+                    call s:MarkSelection(l:start_pos, l:end_pos, a:v_mode)
+                endif
+                break
             endif
-        elseif (l:col_deltas[0] >= 0 && l:col_deltas[1] > 0) "extending mark
-            call s:AuxUnmark(l:start_pos[1]+ index, l:known_mark[2])
-            call s:MarkSelection(l:start_pos, l:end_pos, a:v_mode)
-        elseif (l:col_deltas[0] < 0 && l:col_deltas[1] >= 0) "outside bounds, treating as unmarking
-            call s:AuxUnmark(l:start_pos[1] + index, l:known_mark[2])
-        endif
+        endfor
         let index += 1
     endwhile
+    if l:found == 0
+        call s:MarkSelection(l:start_pos, l:end_pos, a:v_mode)
+    endif
 endfunc
 
 func! codepainter#EraseAll() abort
@@ -155,6 +155,20 @@ func! codepainter#EraseAll() abort
     endif
     let g:marks = {}
 endfunc
+
+function! s:ValidateColorIndex(input) abort
+  let l:n = str2nr(a:input)
+  if type(l:n) != type(0)
+    echom "input must be digit"
+    return ''
+  else
+    if (l:n < 0 || l:n > 9)
+        echom "Invalid index, must be from 0 to 9"
+        return ''
+    endif
+  endif
+  return l:n
+endfunction
 
 func! codepainter#ChangeColor(nPaint) abort
   let l:paint = s:ValidateColorIndex(a:nPaint)
