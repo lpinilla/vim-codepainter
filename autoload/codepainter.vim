@@ -50,56 +50,37 @@ func! s:AuxUnmark(line, id)
         endif
         let idx += 1
     endwhile
+    if empty(g:marks[a:line])
+        unlet g:marks[a:line]
+    endif
 endfunc
 
-func! s:SameLineMark(start_pos, end_pos, delta_pos) abort
-    call s:AuxMark(a:start_pos, a:end_pos)
-endfunc
-
-func! s:VisModeMark(start_pos, end_pos, delta_pos) abort
+func! s:MultiLineMark(start_pos, end_pos, delta_pos, aux_col) abort
     let aux_start_pos = copy(a:start_pos)
-    let aux_end_pos = copy(a:start_pos)
+    let aux_end_pos = copy(a:end_pos)
     let line = 0
-    while line < a:delta_pos[0]
+    while line < a:delta_pos
         let aux_start_pos[1] += line
         let aux_end_pos[1] += line
-        let aux_end_pos[2] = 2147483647 "little hack to say all the line
-        let l:mark = s:AuxMark(a:start_pos[1] + line, a:start_pos[2], -1)
-        let g:marks[a:start_pos[1] + line] = [copy(aux_start_pos), copy(aux_end_pos), l:mark, g:paint_name]
+        let aux_end_pos[2] = a:aux_col
+        call s:AuxMark(aux_start_pos, aux_end_pos)
         let line += 1
     endwhile
     let aux_start_pos[1] += 1
-    let l:mark = s:AuxMark(a:start_pos[1] + line, a:start_pos[2], a:start_pos[2] + a:delta_pos[1])
-    let g:marks[a:start_pos[1] + line] += [aux_start_pos, a:end_pos, l:mark, g:paint_name]
-endfunc
-
-func! s:BlockVisModeMark(start_pos, end_pos, delta_pos) abort
-    let aux_start_pos = copy(a:start_pos)
-    let aux_end_pos = copy(a:start_pos)
-    let line = 0
-    while line < a:delta_pos[0]
-        let aux_start_pos[1] += line
-        let aux_end_pos[1] += line
-        let aux_end_pos[2] = a:end_pos[2]
-        let l:mark = s:AuxMark(a:start_pos[1] + line, a:start_pos[2], a:start_pos[2] + a:delta_pos[1])
-        let g:marks[a:start_pos[1] + line] += [copy(aux_start_pos), copy(aux_end_pos), l:mark, g:paint_name]
-        let line += 1
-    endwhile
-    let aux_start_pos[1] += 1
-    let aux_end_pos[1] += 1
-    let l:mark = s:AuxMark(a:start_pos[1] + line, a:start_pos[2], a:start_pos[2] + a:delta_pos[1])
-    let g:marks[a:start_pos[1] + line] += [aux_start_pos, aux_end_pos, l:mark, g:paint_name]
+    call s:AuxMark(aux_start_pos, aux_end_pos)
 endfunc
 
 func! s:MarkSelection(start_pos, end_pos, v_mode) abort
-    let l:delta_pos = [ a:end_pos[1] - a:start_pos[1], a:end_pos[2] - a:start_pos[2]]
-    if l:delta_pos[0] == 0 "on the same line
-        call s:SameLineMark(a:start_pos, a:end_pos, l:delta_pos)
+    let l:delta_pos = a:end_pos[1] - a:start_pos[1]
+    if l:delta_pos == 0 "on the same line
+        let aux_start = a:start_pos
+        let aux_start[1] -= 1
+        call s:MultiLineMark(aux_start, a:end_pos, l:delta_pos, a:end_pos[2])
     else "more than 1 line
         if a:v_mode == 'v' "visual mode
-            call s:VisModeMark(a:start_pos, a:end_pos, l:delta_pos)
+            call s:MultiLineMark(a:start_pos, a:end_pos, l:delta_pos, 2147483647)
         else "block visual mode
-            call s:BlockVisModeMark(a:start_pos, a:end_pos, l:delta_pos)
+            call s:MultiLineMark(a:start_pos, a:end_pos, l:delta_pos, a:end_pos[2])
         endif
     endif
 endfunc
@@ -117,7 +98,8 @@ func! codepainter#paintText(v_mode) range abort
     endif
     let index = 0
     let l:found = 0
-    while l:found == 0 && index <= l:end_pos[1] - l:start_pos[1]
+    let lines = l:end_pos[1] - l:start_pos[1]
+    while l:found != (lines+1) && index <= lines
         "if it wasn't stored, we mark it
         if !has_key(g:marks, l:start_pos[1] + index)
             call s:MarkSelection(l:start_pos, l:end_pos, a:v_mode)
@@ -126,12 +108,11 @@ func! codepainter#paintText(v_mode) range abort
         for known_mark in g:marks[l:start_pos[1] + index]
             let l:col_deltas = [l:start_pos[2]  - known_mark[0][2], l:end_pos[2] - known_mark[1][2]]
             if l:col_deltas == [0, 0]
-                let l:found = 1
+                let l:found += 1
                 call s:AuxUnmark(l:start_pos[1] + index, known_mark[2])
                 if known_mark[3] != g:paint_name
                     call s:MarkSelection(l:start_pos, l:end_pos, a:v_mode)
                 endif
-                break
             endif
         endfor
         let index += 1
@@ -142,17 +123,19 @@ func! codepainter#paintText(v_mode) range abort
 endfunc
 
 func! codepainter#EraseAll() abort
-    "loop through the list and delete each one
-    if has('nvim')
-        for key in keys(g:marks)
-            silent! call nvim_buf_clear_namespace(0, g:marks[key][2], 1, -1)
+    "loop through the dictionary and delete each one in the array, if the array is
+    "empty, remove from the dictionary
+    let nvim_flag = has('nvim')
+    for line in keys(g:marks)
+        for l:mark in g:marks[line]
+            if nvim_flag
+                silent! call nvim_buf_clear_namespace(0, l:mark[2], 1, -1)
+            else
+                silent! call prop_remove({'type': l:mark[2]}, l:mark[1][1])
+                silent! call prop_type_delete(l:mark[2])
+            endif
         endfor
-    else
-        for key in keys(g:marks)
-            silent! call prop_remove({'type': g:marks[key][2]}, g:marks[key][1][1])
-            silent! call prop_type_delete(g:marks[key][2])
-        endfor
-    endif
+    endfor
     let g:marks = {}
 endfunc
 
@@ -197,14 +180,16 @@ endfunc
 
 func! codepainter#LoadMarks(...) abort
     let l:path = a:0 == 0 ? expand("%") : substitute(a:1, "\"", "","g")
-    let l:path = substitute(l:path, expand("%:e"), "json", "")
+    let l:path = substitute(l:path, expand("%:e"), "json", "") "TODO: revisar esto
     let l:file = readfile(l:path)
     let loaded_marks = json_decode(l:file[0])
     let saved_paint = g:paint_name
-    for l:mark in keys(loaded_marks)
-        let l:aux = loaded_marks[l:mark]
-        let g:paint_name = l:aux[3]
-        call s:MarkSelection(l:aux[0], l:aux[1], "v")
+    for l:line in keys(loaded_marks)
+        for l:mark in loaded_marks[l:line]
+            let l:aux = l:mark
+            let g:paint_name = l:aux[3]
+            call s:MarkSelection(l:aux[0], l:aux[1], "v")
+        endfor
     endfor
     let g:paint_name = saved_paint
     echom "Loaded marks from " . l:path
