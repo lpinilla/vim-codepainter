@@ -62,12 +62,15 @@ func! s:MultiLineMark(start_pos, end_pos, delta_pos, aux_col) abort
     let aux_end_pos[2] = a:end_pos[2]
     let line = 0
     while line < a:delta_pos
-        let aux_end_pos[2] = a:aux_col
+        let end_col = col([aux_start_pos[1], "$"])
+        let aux_end_pos[2] = min([a:aux_col, end_col])
         call s:AuxMark(aux_start_pos, aux_end_pos)
         let aux_start_pos[1] += 1
         let aux_end_pos[1] += 1
         let line += 1
     endwhile
+    let end_col = col([aux_start_pos[1], "$"])
+    let aux_end_pos[2] = min([a:aux_col, end_col])
     call s:AuxMark(aux_start_pos, aux_end_pos)
 endfunc
 
@@ -139,6 +142,19 @@ func! codepainter#EraseAll() abort
         endfor
     endfor
     let g:marks = {}
+endfunc
+
+func! codepainter#EraseLine(line) abort
+    let nvim_flag = has('nvim')
+    for l:mark in g:marks[a:line]
+        if nvim_flag
+            silent! call nvim_buf_clear_namespace(0, l:mark[2], 1, -1)
+        else
+            silent! call prop_remove({'type': l:mark[2]}, l:mark[1][1])
+            silent! call prop_type_delete(l:mark[2])
+        endif
+    endfor
+    unlet g:marks[a:line]
 endfunc
 
 function! s:ValidateColorIndex(input) abort

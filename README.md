@@ -2,7 +2,7 @@
 
 A plugin for Vim to color different parts of code making the use of Highlights
 
-This plugin is made to manage the different "colors" that you can assign to the code. The idea is as simple as to pre-append a delimeter like `#0#` before each line and then add a matching rule to highlight that lines.
+This plugin is made to manage the different "colors" that you can assign to the code. You can then save the marks and load them later!
 
 ## Demo
 
@@ -31,6 +31,10 @@ Use the command `:PainterSaveMarks <path>` to create a json file with the marks.
 The command `:PaintarLoadMarks <path>` lets you load the marks saved previously. If a path is not supplied, it will use the current file path and try to load a json file with the same filename of the current file.
 
 By default, the plugin will try to automatically load the marks of the current file if they exist. You can disable this feature by changing the flag `g:auto_load_marks` to 0 in the plugin source.
+
+### Known Issues
+
+There are some cases where it's hard to delete a paint unless you find the exact positions where you placed it using `echom g:marks[<line_number>]`. To avoid using this, there is a function called `PainterEraseLine <line_number>` which can delete all the marks on that line.
 
 ### Bugs
 
