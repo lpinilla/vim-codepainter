@@ -74,9 +74,7 @@ endfunc
 func! s:MarkSelection(start_pos, end_pos, v_mode) abort
     let l:delta_pos = a:end_pos[1] - a:start_pos[1]
     if l:delta_pos == 0 "on the same line
-        let aux_start = a:start_pos
-        let aux_start[1] -= 1
-        call s:MultiLineMark(aux_start, a:end_pos, l:delta_pos, a:end_pos[2])
+        call s:MultiLineMark(a:start_pos,a:end_pos, l:delta_pos, a:end_pos[2])
     else "more than 1 line
         if a:v_mode == 'v' "visual mode
             call s:MultiLineMark(a:start_pos, a:end_pos, l:delta_pos, 2147483647)
@@ -108,7 +106,7 @@ func! codepainter#paintText(v_mode) range abort
         endif
         for known_mark in g:marks[l:start_pos[1] + index]
             let l:col_deltas = [l:start_pos[2]  - known_mark[0][2], l:end_pos[2] - known_mark[1][2]]
-            if l:col_deltas == [0, 0]
+            if l:col_deltas == [0, 0] || l:col_deltas == [0, -2147483646]
                 let l:found += 1
                 call s:AuxUnmark(l:start_pos[1] + index, known_mark[2])
                 if known_mark[3] != g:paint_name
@@ -198,4 +196,4 @@ func! codepainter#LoadMarks(...) abort
 endfunc
 
 "load marks for this file
-if g:auto_load_marks | call codepainter#LoadMarks(substitute(expand("%"), expand("%:e"), "json", "")) | endif
+if g:auto_load_marks | silent! call codepainter#LoadMarks(substitute(expand("%"), expand("%:e"), "json", "")) | endif
