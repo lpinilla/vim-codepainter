@@ -97,8 +97,9 @@ func! codepainter#paintText(v_mode) range abort
     endif
     let index = 0
     let l:found = 0
+    let l:remarked = 0
     let lines = l:end_pos[1] - l:start_pos[1]
-    while l:found != (lines+1) && index <= lines
+    while !l:remarked && l:found != (lines+1) && index <= lines
         "if it wasn't stored, we mark it
         if !has_key(g:marks, l:start_pos[1] + index)
             call s:MarkSelection(l:start_pos, l:end_pos, a:v_mode)
@@ -111,6 +112,8 @@ func! codepainter#paintText(v_mode) range abort
                 call s:AuxUnmark(l:start_pos[1] + index, known_mark[2])
                 if known_mark[3] != g:paint_name
                     call s:MarkSelection(l:start_pos, l:end_pos, a:v_mode)
+                    let l:remarked = 1
+                    break
                 endif
             endif
         endfor
