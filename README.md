@@ -10,7 +10,7 @@ This plugin is made to manage the different "colors" that you can assign to the 
 
 ## How to use
 
-Once installed (I highly recommend [vim-plug](https://github.com/junegunn/vim-plug)), you need to set a color (or use default), select the area you want to "paint" and press F2 (default key-binding) to paint it.
+Once installed (I highly recommend [vim-plug](https://github.com/junegunn/vim-plug)), you need to set a color (or use default), select the area you want to "paint" and press F2 (default key-binding) to paint it. It works both for visual mode and visual block mode.
 
 If you had something already painted, selecting and applying the same color will result on removing it. If you paint it with another color, it will replace it for the new one.
 
@@ -28,13 +28,13 @@ Use the command `:PainterSaveMarks <path>` to create a json file with the marks.
 
 ### Loading Marks from a file
 
-The command `:PaintarLoadMarks <path>` lets you load the marks saved previously. If a path is not supplied, it will use the current file path and try to load a json file with the same filename of the current file.
+The command `:PainterLoadMarks <path>` lets you load the marks saved previously. If a path is not supplied, it will use the current file path and try to load a json file with the same filename of the current file.
 
 By default, the plugin will try to automatically load the marks of the current file if they exist. You can disable this feature by changing the flag `g:auto_load_marks` to 0 in the plugin source.
 
 ### Known Issues
 
-There are some cases where it's hard to delete a paint unless you find the exact positions where you placed it using `echom g:marks[<line_number>]`. To avoid using this, there is a function called `PainterEraseLine <line_number>` which can delete all the marks on that line.
+There are some cases where it's hard to delete a paint unless you find the exact positions where you placed it using `echom g:marks[<line_number>]`. To avoid using this, there is a function called `:PainterEraseLine <line_number>` which can delete all the marks on that line.
 
 ### Bugs
 
