@@ -8,6 +8,12 @@ This plugin is made to manage the different "colors" that you can assign to the 
 
 ![](./vim-codepainter_demo.gif)
 
+## Why
+
+This project started because I felt the need of having an easy and straightforward way to highlight text in vim, mainly for code reviewing where I can paint different parts of code as I understand (or don't). Although after the first post on reddit, many people found many interesting ways of using it.
+
+From simple note-taking to integration with testing frameworks to highlight failed tests or code coverage, feel free to use it to highlight anything!
+
 ## How to use
 
 Once installed (I highly recommend [vim-plug](https://github.com/junegunn/vim-plug)), you need to set a color (or use default), select the area you want to "paint" and press F2 (default key-binding) to paint it. It works both for visual mode and visual block mode.
