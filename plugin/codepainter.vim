@@ -5,8 +5,10 @@ if exists("g:loaded_painter")
 endif
 let g:loaded_painter = 1
 
-vnoremap <F2> :<c-u>call codepainter#paintText(visualmode())<cr>
-nnoremap <F2> :<c-u>call codepainter#paintText('')<cr>
+if codepainter#config#DefaultMappings()
+  vnoremap <F2> :<c-u>call codepainter#paintText(visualmode())<cr>
+  nnoremap <F2> :<c-u>call codepainter#paintText('')<cr>
+endif
 
 command! -nargs=1 PainterPickColor call codepainter#ChangeColor(<f-args>)
 command! -nargs=1 PainterPickColorByName call codepainter#ChangeColorByName(<f-args>)
