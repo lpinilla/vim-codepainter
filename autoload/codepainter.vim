@@ -1,3 +1,6 @@
+let s:cpo_save = &cpo
+set cpo&vim
+
 " defining the colors
 hi paint0 gui=reverse cterm=reverse ctermfg=47  ctermbg=236 guifg=#A3BE8C guibg=#2E3440
 hi paint1 gui=reverse cterm=reverse ctermfg=185 ctermbg=236 guifg=#EBCB8B guibg=#2E3440
@@ -216,3 +219,6 @@ endfunc
 
 "load marks for this file
 if g:auto_load_marks | silent! call codepainter#LoadMarks(substitute(expand("%"), expand("%:e"), "json", "")) | endif
+
+let &cpo = s:cpo_save
+unlet! s:cpo_save
