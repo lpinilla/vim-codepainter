@@ -3,7 +3,7 @@
 if exists("g:loaded_painter")
   finish
 endif
-let g:loaded_painter = 0
+let g:loaded_painter = 1
 
 if codepainter#config#DefaultMappings()
   vnoremap <silent> <F2> :<c-u> call codepainter#paintText(visualmode())<cr>
