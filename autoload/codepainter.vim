@@ -192,7 +192,12 @@ endfunc
 
 func! codepainter#SaveMarks(...) abort
     let l:path = a:0 == 0 ? expand("%") : substitute(a:1, "\"", "","g")
-    let l:path = substitute(l:path, expand("%:e"), "json", "")
+    let l:aux = expand("%:e")
+    if len(l:aux) == 0
+        let l:path = l:path . ".json"
+    else
+        let l:path = substitute(l:path, expand("%:e"), "json", "")
+    endif
     let jsonString = json_encode(g:marks)
     execute ("redir! >" . l:path)
     silent! echon jsonString
@@ -201,9 +206,15 @@ func! codepainter#SaveMarks(...) abort
 endfunc
 
 func! codepainter#LoadMarks(...) abort
-    let l:path = a:0 == 0 ?
-                \ substitute(expand("%"), expand("%:e"), "json", "") :
-                \ substitute(a:1, "\"", "","g")
+    let l:path = a:0 == 0 ? expand("%") : substitute(a:1, "\"", "","g")
+    if a:0 == 0
+        let l:aux = expand("%:e")
+        if len(l:aux) == 0
+            let l:path = l:path . ".json"
+        else
+            let l:path = substitute(l:path, expand("%:e"), "json", "")
+        endif
+    endif
     let l:file = readfile(l:path)
     let loaded_marks = json_decode(l:file[0])
     let saved_paint = g:paint_name
