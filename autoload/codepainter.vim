@@ -147,9 +147,10 @@ func! codepainter#EraseAll() abort
     let g:marks = {}
 endfunc
 
-func! codepainter#EraseLine(line) abort
+func! codepainter#EraseLine(...) abort
+    let l:line = a:0 == 0 ? getpos(".")[1] : a:1
     let nvim_flag = has('nvim')
-    for l:mark in g:marks[a:line]
+    for l:mark in g:marks[l:line]
         if nvim_flag
             silent! call nvim_buf_clear_namespace(0, l:mark[2], 1, -1)
         else
@@ -157,7 +158,7 @@ func! codepainter#EraseLine(line) abort
             silent! call prop_type_delete(l:mark[2])
         endif
     endfor
-    unlet g:marks[a:line]
+    unlet g:marks[l:line]
 endfunc
 
 function! s:ValidateColorIndex(input) abort

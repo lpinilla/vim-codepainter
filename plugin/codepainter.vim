@@ -6,13 +6,13 @@ endif
 let g:loaded_painter = 1
 
 if codepainter#config#DefaultMappings()
-  vnoremap <F2> :<c-u>call codepainter#paintText(visualmode())<cr>
-  nnoremap <F2> :<c-u>call codepainter#paintText('')<cr>
+  vnoremap <silent> <F2> :<c-u> call codepainter#paintText(visualmode())<cr>
+  nnoremap <silent> <F2> :<c-u> call codepainter#paintText('')<cr>
 endif
 
-command! -nargs=1 PainterPickColor call codepainter#ChangeColor(<f-args>)
-command! -nargs=1 PainterPickColorByName call codepainter#ChangeColorByName(<f-args>)
-command! -nargs=0 PainterEraseAll call codepainter#EraseAll()
-command! -nargs=1 PainterEraseLine call codepainter#EraseLine(<f-args>)
-command! -nargs=? PainterSaveMarks call codepainter#SaveMarks(<f-args>)
-command! -nargs=? PainterLoadMarks call codepainter#LoadMarks(<f-args>)
+command! -nargs=1 PainterPickColor          silent! call codepainter#ChangeColor(<f-args>)
+command! -nargs=1 PainterPickColorByName    silent! call codepainter#ChangeColorByName(<f-args>)
+command! -nargs=0 PainterEraseAll           silent! call codepainter#EraseAll()
+command! -nargs=? PainterEraseLine          silent! call codepainter#EraseLine(<f-args>)
+command! -nargs=? PainterSaveMarks          silent! call codepainter#SaveMarks(<f-args>)
+command! -nargs=? PainterLoadMarks          silent! call codepainter#LoadMarks(<f-args>)
