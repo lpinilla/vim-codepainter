@@ -1,6 +1,6 @@
 # vim-codepainter 🎨🖌
 
-A plugin for Vim to color different parts of code making the use of text properties for vim (version >= 8.2.*) and `nvim_buf_add_highlight` function for nvim.
+A plugin for Vim to color different parts of code making the use of text properties for vim (version >= 8.2.\*) and `nvim_buf_add_highlight` function for nvim.
 
 This plugin is made to manage the different "colors" that you can assign to the code. You can then save the marks and load them later!
 
@@ -41,6 +41,8 @@ By default, the plugin will try to automatically load the marks of the current f
 ### Known Issues
 
 There are some cases where it's hard to delete a paint unless you find the exact positions where you placed it using `echom g:marks[<line_number>]`. To avoid using this, there is a function called `:PainterEraseLine <line_number>` which can delete all the marks on that line.
+
+Also, there are some cases in which the saved marks aren't loaded automatically when you open a file. In this cases, just using the command "PainterLoadMarks" will solve the issue.
 
 ### Bugs
 
