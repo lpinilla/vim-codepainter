@@ -17,6 +17,8 @@ let g:paint_name = "paint0"
 let g:auto_load_marks = 1 "look for json files with the same name and load them by default
 let g:marks = {}
 let g:vim_index = 0
+let g:navigation_index = 0
+
 "dictionary holding the markings folowing this structure
 "marks = {
 "   <key> line: <val> [[start_pos, end_pos, mark_id, paint_name]]
@@ -227,6 +229,22 @@ func! codepainter#LoadMarks(...) abort
     endfor
     let g:paint_name = saved_paint
     echom "Loaded marks from " . l:path
+endfunc
+
+func! s:DictToOrderedList() abort
+    let l:marks_list = []
+    " loop through each mark of the dict and store start positions
+    for l:key in keys(g:marks)
+        let l:marks_list = l:marks_list + [g:marks[l:key][0][0]]
+    endfor
+    " return the list with natural order
+    return sort(l:marks_list)
+endfunc
+
+func! codepainter#navigate() abort
+    let l:ordered_marks = s:DictToOrderedList()
+    call setpos(".", l:ordered_marks[g:navigation_index % len(l:ordered_marks)])
+    let g:navigation_index += 1
 endfunc
 
 "load marks for this file

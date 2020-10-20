@@ -1,6 +1,6 @@
 # vim-codepainter 🎨🖌
 
-A plugin for Vim to color different parts of code making the use of text properties for vim (version >= 8.2.\*) and `nvim_buf_add_highlight` function for nvim.
+A plugin for Vim to color different parts of code making the use of text properties for vim (version >= 8.2) and `nvim_buf_add_highlight` function for nvim.
 
 This plugin is made to manage the different "colors" that you can assign to the code. You can then save the marks and load them later!
 
@@ -16,7 +16,7 @@ From simple note-taking to integration with testing frameworks to highlight fail
 
 ## How to use
 
-Once installed (I highly recommend [vim-plug](https://github.com/junegunn/vim-plug)), you need to set a color (or use default), select the area you want to "paint" and press F2 (default key-binding) to paint it. It works both for visual mode and visual block mode.
+Once installed (I highly recommend [vim-plug](https://github.com/junegunn/vim-plug)), you need to set a color (or use default), select the area you want to "paint" and press <F2> (default key-binding) to paint it. It works both for visual mode and visual block mode.
 
 If you had something already painted, selecting and applying the same color will result on removing it. If you paint it with another color, it will replace it for the new one.
 
@@ -37,6 +37,10 @@ Use the command `:PainterSaveMarks <path>` to create a json file with the marks.
 The command `:PainterLoadMarks <path>` lets you load the marks saved previously. If a path is not supplied, it will use the current file path and try to load a json file with the same filename of the current file.
 
 By default, the plugin will try to automatically load the marks of the current file if they exist. You can disable this feature by changing the flag `g:auto_load_marks` to 0 in the plugin source.
+
+### Navigation!
+
+You can loop through all the paints using the default keybind <F3>
 
 ### Known Issues
 

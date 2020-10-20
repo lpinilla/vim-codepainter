@@ -8,6 +8,7 @@ let g:loaded_painter = 1
 if codepainter#config#DefaultMappings()
   vnoremap <silent> <F2> :<c-u> call codepainter#paintText(visualmode())<cr>
   nnoremap <silent> <F2> :<c-u> call codepainter#paintText('')<cr>
+  nnoremap <silent> <F3> :<c-u> call codepainter#navigate()<cr>
 endif
 
 command! -nargs=1 PainterPickColor          silent! call codepainter#ChangeColor(<f-args>)
