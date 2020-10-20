@@ -16,7 +16,7 @@ From simple note-taking to integration with testing frameworks to highlight fail
 
 ## How to use
 
-Once installed (I highly recommend [vim-plug](https://github.com/junegunn/vim-plug)), you need to set a color (or use default), select the area you want to "paint" and press <F2> (default key-binding) to paint it. It works both for visual mode and visual block mode.
+Once installed (I highly recommend [vim-plug](https://github.com/junegunn/vim-plug)), you need to set a color (or use default), select the area you want to "paint" and press F2 (default key-binding) to paint it. It works both for visual mode and visual block mode.
 
 If you had something already painted, selecting and applying the same color will result on removing it. If you paint it with another color, it will replace it for the new one.
 
@@ -40,7 +40,7 @@ By default, the plugin will try to automatically load the marks of the current f
 
 ### Navigation!
 
-You can loop through all the paints using the default keybind <F3>
+You can loop through all the paints using the default keybind F3.
 
 ### Known Issues
 
