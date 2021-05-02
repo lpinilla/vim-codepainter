@@ -22,7 +22,7 @@ If you had something already painted, selecting and applying the same color will
 
 ### Changing between colors
 
-There are 10 colors pre-defined on the plugin source (named "paint<n>"). You can use any highlight group you want using `:PainterChangeColor <number>` for the default ones or `:PainterChangeColorByName <name>` to supply your own highlight group. The default group is "paint0".
+There are 10 colors pre-defined on the plugin source (named "paint<n>"). You can use any highlight group you want using `:PainterPickColor <number>` for the default ones or `:PainterPickColorByName <name>` to supply your own highlight group. The default group is "paint0".
 
 ### Cleaning everything
 
