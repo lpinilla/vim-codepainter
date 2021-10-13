@@ -96,6 +96,12 @@ func! codepainter#paintText(v_mode) range abort
     "mark text
     let l:start_pos = getpos("'<")
     let l:end_pos = getpos("'>")
+    "neovim doesn't clean the position of < and > (selections), so
+    "the only way of knowing if we are indeed painting is if the
+    "cursor is inside that range
+    if l:start_pos[1] != getpos(".")[1]
+        return
+    endif
     if l:start_pos == [0,0,0,0] && l:end_pos == [0,0,0,0]
         return
     endif
