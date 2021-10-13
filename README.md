@@ -22,7 +22,7 @@ If you had something already painted, selecting and applying the same color will
 
 ### Changing between colors
 
-There are 10 colors pre-defined on the plugin source (named "paint<n>"). You can use any highlight group you want using `:PainterChangeColor <number>` for the default ones or `:PainterChangeColorByName <name>` to supply your own highlight group. The default group is "paint0".
+There are 10 colors pre-defined on the plugin source (named "paint<n>"). You can use any highlight group you want using `:PainterPickColor <number>` for the default ones or `:PainterPickColorByName <name>` to supply your own highlight group. The default group is "paint0".
 
 ### Cleaning everything
 
@@ -44,7 +44,7 @@ You can loop through all the paints using the default keybind F3.
 
 ### Known Issues
 
-There are some cases where it's hard to delete a paint unless you find the exact positions where you placed it using `echom g:marks[<line_number>]`. To avoid using this, there is a function called `:PainterEraseLine <line_number>` which can delete all the marks on that line.
+There are some cases where it's hard to delete a paint unless you find the exact positions where you placed it using `echom g:marks[<line_number>]`. To avoid using this, there is a function called `:PainterEraseLine <optional: line_number>` which can delete all the marks on that line. If no argument for a line number is supplied, it will erase the current line.
 
 Also, there are some cases in which the saved marks aren't loaded automatically when you open a file. In this cases, just using the command "PainterLoadMarks" will solve the issue.
 
