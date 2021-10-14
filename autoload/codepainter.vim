@@ -145,7 +145,7 @@ func! codepainter#EraseAll() abort
     for line in keys(g:marks)
         for l:mark in g:marks[line]
             if nvim_flag
-                silent! call nvim_buf_clear_namespace(0, l:mark[2], 1, -1)
+                silent! call nvim_buf_clear_namespace(0, l:mark[2], 0, -1)
             else
                 silent! call prop_remove({'type': l:mark[2]}, l:mark[1][1])
                 silent! call prop_type_delete(l:mark[2])
@@ -160,7 +160,7 @@ func! codepainter#EraseLine(...) abort
     let nvim_flag = has('nvim')
     for l:mark in g:marks[l:line]
         if nvim_flag
-            silent! call nvim_buf_clear_namespace(0, l:mark[2], 1, -1)
+            silent! call nvim_buf_clear_namespace(0, l:mark[2], 0, -1)
         else
             silent! call prop_remove({'type': l:mark[2]}, l:mark[1][1])
             silent! call prop_type_delete(l:mark[2])
