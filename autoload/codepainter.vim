@@ -13,7 +13,9 @@ hi paint7 gui=reverse cterm=reverse ctermfg=242 ctermbg=15  guifg=#2D401C guibg=
 hi paint8 gui=reverse cterm=reverse ctermfg=62  ctermbg=236 guifg=#6868BD guibg=#2E3440
 hi paint9 gui=reverse cterm=reverse ctermfg=142 ctermbg=236 guifg=#C2B330 guibg=#2E3440
 
-let g:paint_name = "paint0"
+if !exists("g:paint_name")
+  let g:paint_name = "paint0"
+endif
 let g:auto_load_marks = 1 "look for json files with the same name and load them by default
 let g:marks = {}
 let g:vim_index = 0
