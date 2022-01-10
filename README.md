@@ -44,7 +44,7 @@ You can loop through all the paints using the default keybind F3.
 
 ### Known Issues
 
-There are some cases where it's hard to delete a paint unless you find the exact positions where you placed it using `echom g:marks[<line_number>]`. To avoid using this, there is a function called `:PainterEraseLine <optional: line_number> <optional: number_of_lines_to_erase>` which can delete all the marks on that line or on several lines. If no argument for a line number is supplied, it will erase the current line.
+There are some cases where it's hard to delete a paint unless you find the exact positions where you placed it using `echom g:marks[<line_number>]`. To avoid using this, there is a function called `:PainterEraseLine <optional: number_of_lines_to_erase>` which can delete all the marks on that line or on several lines starting from the cursor's position.
 
 Also, there are some cases in which the saved marks aren't loaded automatically when you open a file. In this cases, just using the command "PainterLoadMarks" will solve the issue.
 

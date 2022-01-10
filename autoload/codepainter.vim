@@ -160,17 +160,15 @@ endfunc
 
 func! codepainter#EraseLine(...) abort
     if a:0 == 0
-        call s:EraseLines(1)
-    elseif a:0 == 1
-        call s:EraseLines(a:1, 1)
+        call s:EraseLines()
     else
-        call s:EraseLines(a:1, a:2)
+        call s:EraseLines(a:1)
     endif
 endfunc
 
 func! s:EraseLines(...) abort
-    let l:line = a:0 == 1 ? getpos(".")[1] : a:1
-    let l:n_lines = a:0 == 1 ? a:1 : a:2
+    let l:line = getpos(".")[1]
+    let l:n_lines = a:0 == 1 ? a:1 : 1
     let nvim_flag = g:has_vim
     let l:iter = 0
     while l:iter < l:n_lines
