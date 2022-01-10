@@ -18,6 +18,7 @@ let g:auto_load_marks = 1 "look for json files with the same name and load them 
 let g:marks = {}
 let g:vim_index = 0
 let g:navigation_index = 0
+let g:has_nvim = has('nvim')
 
 "dictionary holding the markings folowing this structure
 "marks = {
@@ -26,7 +27,7 @@ let g:navigation_index = 0
 
 func! s:AuxMark(start_pos, end_pos) abort
     let l:mark = 0
-    if has('nvim')
+    if g:has_nvim
         let l:mark = nvim_buf_add_highlight(0, 0, g:paint_name, a:start_pos[1] - 1, a:start_pos[2] - 1, a:end_pos[2])
     else
         call prop_type_add(g:vim_index, {'highlight': g:paint_name })
@@ -41,7 +42,7 @@ func! s:AuxMark(start_pos, end_pos) abort
 endfunc
 
 func! s:AuxUnmark(line, id)
-    if has('nvim')
+    if g:has_nvim
         call nvim_buf_clear_namespace(0, a:id, a:line - 1,-1)
     else
         call prop_remove({'type': a:id}, a:line)
@@ -141,7 +142,7 @@ endfunc
 func! codepainter#EraseAll() abort
     "loop through the dictionary and delete each one in the array, if the array is
     "empty, remove from the dictionary
-    let nvim_flag = has('nvim')
+    let nvim_flag = g:has_nvim
     for line in keys(g:marks)
         for l:mark in g:marks[line]
             if nvim_flag
@@ -156,17 +157,32 @@ func! codepainter#EraseAll() abort
 endfunc
 
 func! codepainter#EraseLine(...) abort
-    let l:line = a:0 == 0 ? getpos(".")[1] : a:1
-    let nvim_flag = has('nvim')
-    for l:mark in g:marks[l:line]
-        if nvim_flag
-            silent! call nvim_buf_clear_namespace(0, l:mark[2], 0, -1)
-        else
-            silent! call prop_remove({'type': l:mark[2]}, l:mark[1][1])
-            silent! call prop_type_delete(l:mark[2])
-        endif
-    endfor
-    unlet g:marks[l:line]
+    if a:0 == 0
+        call s:EraseLines(1)
+    elseif a:0 == 1
+        call s:EraseLines(a:1, 1)
+    else
+        call s:EraseLines(a:1, a:2)
+    endif
+endfunc
+
+func! s:EraseLines(...) abort
+    let l:line = a:0 == 1 ? getpos(".")[1] : a:1
+    let l:n_lines = a:0 == 1 ? a:1 : a:2
+    let nvim_flag = g:has_vim
+    let l:iter = 0
+    while l:iter < l:n_lines
+        for l:mark in g:marks[l:line + l:iter]
+            if nvim_flag
+                silent! call nvim_buf_clear_namespace(0, l:mark[2], 0, -1)
+            else
+                silent! call prop_remove({'type': l:mark[2]}, l:mark[1][1])
+                silent! call prop_type_delete(l:mark[2])
+            endif
+           unlet g:marks[l:line + l:iter]
+        endfor
+        let l:iter += 1
+    endwhile
 endfunc
 
 function! s:ValidateColorIndex(input) abort
