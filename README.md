@@ -51,3 +51,7 @@ Also, there are some cases in which the saved marks aren't loaded automatically 
 ### Bugs
 
 If you find a bug, feel free to open an issue about it!
+
+### Donations 🍵
+
+If you liked this plugin that much, you can consider leaving a tip to my Monero (XMR) address: `846JmMLFMVv63syZg2Ktd9K3cS4dUFXBn7QGUAytFPGG6eNBJxvzKCge4d7H1L5pQoH9YWme9kAGKat1t16WkN8iNM9nkAn` to help me dedicate more time to Open Source Software.
